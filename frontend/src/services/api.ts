@@ -1,0 +1,48 @@
+import axios from 'axios';
+import {
+  Expense,
+  CreateExpensePayload,
+  UpdateExpensePayload,
+  ExpenseFilters,
+} from '../types/expense';
+
+const client = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const api = {
+  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
+    const params: Record<string, string | number> = {};
+    if (filters?.user_id) params.user_id = filters.user_id;
+    if (filters?.category && filters.category !== 'все') params.category = filters.category;
+    if (filters?.from) params.from = filters.from;
+    if (filters?.to) params.to = filters.to;
+    if (filters?.limit) params.limit = filters.limit;
+    if (filters?.offset) params.offset = filters.offset;
+
+    const resp = await client.get<{ items: Expense[] }>('/expenses', { params });
+    return resp.data.items || [];
+  },
+
+  async createExpense(payload: CreateExpensePayload): Promise<Expense> {
+    const resp = await client.post<Expense>('/expenses', payload);
+    return resp.data;
+  },
+
+  async updateExpense(id: string, payload: UpdateExpensePayload): Promise<Expense> {
+    const resp = await client.put<Expense>(`/expenses/${id}`, payload);
+    return resp.data;
+  },
+
+  async deleteExpense(id: string): Promise<void> {
+    await client.delete(`/expenses/${id}`);
+  },
+
+  async getDistinctUsers(): Promise<number[]> {
+    const resp = await client.get<{ user_ids: number[] }>('/users');
+    return resp.data.user_ids || [];
+  },
+};
