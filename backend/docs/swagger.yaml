@@ -1,0 +1,249 @@
+basePath: /
+definitions:
+  backend_internal_adapter_in_http_dto.CreateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      comment:
+        type: string
+      spent_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  backend_internal_adapter_in_http_dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  backend_internal_adapter_in_http_dto.ExpenseResponse:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      comment:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      spent_at:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  backend_internal_adapter_in_http_dto.GetDistinctUsersResponse:
+    properties:
+      user_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  backend_internal_adapter_in_http_dto.ListExpensesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+        type: array
+    type: object
+  backend_internal_adapter_in_http_dto.UpdateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      comment:
+        type: string
+      spent_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: REST API for Family Expenses Tracker Web Panel
+  title: Family Expenses Tracker API
+  version: "1.0"
+paths:
+  /api/expenses:
+    get:
+      description: Retrieve a list of expenses with optional filtering
+      parameters:
+      - description: Telegram User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: From timestamp (RFC3339)
+        in: query
+        name: from
+        type: string
+      - description: To timestamp (RFC3339)
+        in: query
+        name: to
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ListExpensesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+      summary: List expenses
+      tags:
+      - expenses
+    post:
+      consumes:
+      - application/json
+      description: Create a new expense record for any family member
+      parameters:
+      - description: Expense request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_adapter_in_http_dto.CreateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+      summary: Create a new expense
+      tags:
+      - expenses
+  /api/expenses/{id}:
+    delete:
+      description: Delete an expense by UUID
+      parameters:
+      - description: Expense UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+      summary: Delete an expense
+      tags:
+      - expenses
+    get:
+      description: Retrieve a single expense by UUID
+      parameters:
+      - description: Expense UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+      summary: Get expense by ID
+      tags:
+      - expenses
+    put:
+      consumes:
+      - application/json
+      description: Update expense details by UUID
+      parameters:
+      - description: Expense UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_adapter_in_http_dto.UpdateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+      summary: Update an existing expense
+      tags:
+      - expenses
+  /api/health:
+    get:
+      description: Check service availability
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /api/users:
+    get:
+      description: List all distinct family member user IDs in database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_internal_adapter_in_http_dto.GetDistinctUsersResponse'
+      summary: Get distinct user IDs
+      tags:
+      - users
+swagger: "2.0"

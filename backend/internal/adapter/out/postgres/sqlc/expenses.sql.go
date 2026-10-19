@@ -1,0 +1,248 @@
+package sqlc
+
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+const createExpense = `-- name: CreateExpense :one
+INSERT INTO expenses (id, user_id, amount, category, spent_at, comment, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
+`
+
+type CreateExpenseParams struct {
+	ID        pgtype.UUID
+	UserID    int64
+	Amount    pgtype.Numeric
+	Category  string
+	SpentAt   pgtype.Timestamptz
+	Comment   string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreateExpense(ctx context.Context, arg CreateExpenseParams) (Expense, error) {
+	row := q.db.QueryRow(ctx, createExpense,
+		arg.ID,
+		arg.UserID,
+		arg.Amount,
+		arg.Category,
+		arg.SpentAt,
+		arg.Comment,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i Expense
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Amount,
+		&i.Category,
+		&i.SpentAt,
+		&i.Comment,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getExpenseByID = `-- name: GetExpenseByID :one
+SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
+FROM expenses
+WHERE id = $1
+`
+
+func (q *Queries) GetExpenseByID(ctx context.Context, id pgtype.UUID) (Expense, error) {
+	row := q.db.QueryRow(ctx, getExpenseByID, id)
+	var i Expense
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Amount,
+		&i.Category,
+		&i.SpentAt,
+		&i.Comment,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateExpense = `-- name: UpdateExpense :one
+UPDATE expenses
+SET amount = $2,
+    category = $3,
+    spent_at = $4,
+    comment = $5,
+    updated_at = $6
+WHERE id = $1
+RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
+`
+
+type UpdateExpenseParams struct {
+	ID        pgtype.UUID
+	Amount    pgtype.Numeric
+	Category  string
+	SpentAt   pgtype.Timestamptz
+	Comment   string
+	UpdatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateExpense(ctx context.Context, arg UpdateExpenseParams) (Expense, error) {
+	row := q.db.QueryRow(ctx, updateExpense,
+		arg.ID,
+		arg.Amount,
+		arg.Category,
+		arg.SpentAt,
+		arg.Comment,
+		arg.UpdatedAt,
+	)
+	var i Expense
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Amount,
+		&i.Category,
+		&i.SpentAt,
+		&i.Comment,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteExpense = `-- name: DeleteExpense :exec
+DELETE FROM expenses
+WHERE id = $1
+`
+
+func (q *Queries) DeleteExpense(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteExpense, id)
+	return err
+}
+
+const getLatestExpensesByUser = `-- name: GetLatestExpensesByUser :many
+SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
+FROM expenses
+WHERE user_id = $1
+ORDER BY spent_at DESC, created_at DESC
+LIMIT $2
+`
+
+type GetLatestExpensesByUserParams struct {
+	UserID int64
+	Limit  int32
+}
+
+func (q *Queries) GetLatestExpensesByUser(ctx context.Context, arg GetLatestExpensesByUserParams) ([]Expense, error) {
+	rows, err := q.db.Query(ctx, getLatestExpensesByUser, arg.UserID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Expense
+	for rows.Next() {
+		var i Expense
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Amount,
+			&i.Category,
+			&i.SpentAt,
+			&i.Comment,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDistinctUserIDs = `-- name: GetDistinctUserIDs :many
+SELECT DISTINCT user_id
+FROM expenses
+ORDER BY user_id ASC
+`
+
+func (q *Queries) GetDistinctUserIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getDistinctUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var user_id int64
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExpensesFiltered = `-- name: ListExpensesFiltered :many
+SELECT id, user_id, amount, category, spent_at, comment, created_at, updated_at
+FROM expenses
+WHERE ($1::bigint IS NULL OR user_id = $1)
+  AND ($2::varchar IS NULL OR category = $2)
+  AND ($3::timestamptz IS NULL OR spent_at >= $3)
+  AND ($4::timestamptz IS NULL OR spent_at <= $4)
+ORDER BY spent_at DESC, created_at DESC
+LIMIT $5 OFFSET $6
+`
+
+type ListExpensesFilteredParams struct {
+	UserID   *int64
+	Category *string
+	From     pgtype.Timestamptz
+	To       pgtype.Timestamptz
+	Limit    int32
+	Offset   int32
+}
+
+func (q *Queries) ListExpensesFiltered(ctx context.Context, arg ListExpensesFilteredParams) ([]Expense, error) {
+	rows, err := q.db.Query(ctx, listExpensesFiltered,
+		arg.UserID,
+		arg.Category,
+		arg.From,
+		arg.To,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Expense
+	for rows.Next() {
+		var i Expense
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Amount,
+			&i.Category,
+			&i.SpentAt,
+			&i.Comment,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

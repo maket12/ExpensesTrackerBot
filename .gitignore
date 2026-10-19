@@ -1,0 +1,17 @@
+.env
+.env.local
+node_modules/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/backend/server
+/backend/bin/
+.idea/
+.vscode/
+*.swp
+*~

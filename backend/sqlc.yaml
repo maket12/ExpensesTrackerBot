@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "internal/adapter/out/postgres/queries"
+    schema: "migrations/000001_create_expenses_table.up.sql"
+    gen:
+      go:
+        package: "sqlc"
+        out: "internal/adapter/out/postgres/sqlc"
+        sql_package: "pgx/v5"
