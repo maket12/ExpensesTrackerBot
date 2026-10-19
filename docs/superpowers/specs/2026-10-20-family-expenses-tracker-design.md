@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_expenses_user_spent_at ON expenses(user_id, spent
 
 ## 4. Configuration Management
 
-Database credentials use separate environment variables with the `DB_` (and `DBB_`) prefix:
+Database credentials use separate environment variables with the `DB_` prefix:
 - `DB_HOST` (default: `postgres`)
 - `DB_PORT` (default: `5432`)
 - `DB_USER` (default: `postgres`)
