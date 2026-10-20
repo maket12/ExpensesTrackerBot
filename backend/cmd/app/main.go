@@ -14,14 +14,14 @@ import (
 	tgadapter "backend/internal/adapter/in/telegram"
 	"backend/internal/adapter/out/llm"
 	"backend/internal/adapter/out/memory"
-	"backend/internal/adapter/out/postgres"
+	postgresadapter "backend/internal/adapter/out/postgres"
 	"backend/internal/app/usecases"
 	"backend/internal/config"
+	pkgpostgres "backend/pkg/postgres"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,19 +31,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	runMigrations(cfg.DSN())
+	pgCfg := cfg.PostgresConfig()
+	runMigrations(pgCfg.MigrationDSN())
 
-	pool, err := pgxpool.New(ctx, cfg.DSN())
+	pgClient, err := pkgpostgres.NewClient(ctx, pgCfg)
 	if err != nil {
-		log.Fatalf("failed to create pgxpool: %v", err)
+		log.Fatalf("failed to create postgres client: %v", err)
 	}
-	defer pool.Close()
+	defer pgClient.Close()
 
-	if err := pool.Ping(ctx); err != nil {
-		log.Printf("warning: postgres ping failed: %v", err)
-	}
-
-	repo := postgres.NewRepository(pool)
+	repo := postgresadapter.NewRepository(pgClient)
 	expenseUseCase := usecases.NewExpenseUseCase(repo)
 	memoryStore := memory.NewStore(15)
 

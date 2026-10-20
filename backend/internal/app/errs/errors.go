@@ -1,11 +1,23 @@
 package errs
 
-import "errors"
+import (
+	"errors"
+
+	pkgerrs "backend/pkg/errs"
+)
 
 var (
-	ErrExpenseNotFound    = errors.New("expense not found")
+	ErrExpenseNotFound    = pkgerrs.ErrObjectNotFound
 	ErrForbiddenAccess    = errors.New("access forbidden")
 	ErrAgentMaxIterations = errors.New("agent reached maximum iteration limit")
 	ErrAgentFailed        = errors.New("agent failed to process message")
-	ErrInvalidInput       = errors.New("invalid use case input")
+	ErrInvalidInput       = pkgerrs.ErrValueIsInvalid
 )
+
+func NewInvalidInputError(paramName string, reason error) *pkgerrs.ValueInvalidError {
+	if reason != nil {
+		return pkgerrs.NewValueInvalidErrorWithReason(paramName, reason)
+	}
+	return pkgerrs.NewValueInvalidError(paramName)
+}
+

@@ -1,9 +1,13 @@
 package errs
 
-import "errors"
+import (
+	"errors"
+
+	pkgerrs "backend/pkg/errs"
+)
 
 var (
-	ErrEmptyAPIKey      = errors.New("llm api key is required")
+	ErrEmptyAPIKey      = pkgerrs.NewValueRequiredError("llm_api_key")
 	ErrEmptyResponse    = errors.New("llm returned empty response")
 	ErrCompletionFailed = errors.New("llm completion failed")
 )

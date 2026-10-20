@@ -8,6 +8,7 @@ import (
 	"backend/internal/adapter/out/postgres/sqlc"
 	domainerrs "backend/internal/domain/errs"
 	"backend/internal/domain/models"
+	pkgpostgres "backend/pkg/postgres"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,11 +16,20 @@ import (
 )
 
 type Repository struct {
+	client  *pkgpostgres.Client
 	pool    *pgxpool.Pool
 	queries *sqlc.Queries
 }
 
-func NewRepository(pool *pgxpool.Pool) *Repository {
+func NewRepository(client *pkgpostgres.Client) *Repository {
+	return &Repository{
+		client:  client,
+		pool:    client.Pool,
+		queries: sqlc.New(client.Pool),
+	}
+}
+
+func NewRepositoryWithPool(pool *pgxpool.Pool) *Repository {
 	return &Repository{
 		pool:    pool,
 		queries: sqlc.New(pool),
@@ -36,10 +46,10 @@ func (r *Repository) Create(ctx context.Context, expense *models.Expense) (*mode
 }
 
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Expense, error) {
-	row, err := r.queries.GetExpenseByID(ctx, mapper.ToPgUUID(id))
+	row, err := r.queries.GetExpenseByID(ctx, pkgpostgres.MapToPgUUID(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrs.ErrExpenseNotFound
+			return nil, domainerrs.NewExpenseNotFoundError(id)
 		}
 		return nil, err
 	}
@@ -51,7 +61,7 @@ func (r *Repository) Update(ctx context.Context, expense *models.Expense) (*mode
 	row, err := r.queries.UpdateExpense(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrs.ErrExpenseNotFound
+			return nil, domainerrs.NewExpenseNotFoundError(expense.ID)
 		}
 		return nil, err
 	}
@@ -59,7 +69,7 @@ func (r *Repository) Update(ctx context.Context, expense *models.Expense) (*mode
 }
 
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.queries.DeleteExpense(ctx, mapper.ToPgUUID(id))
+	return r.queries.DeleteExpense(ctx, pkgpostgres.MapToPgUUID(id))
 }
 
 func (r *Repository) List(ctx context.Context, filter models.ExpenseFilter) ([]*models.Expense, error) {
@@ -88,3 +98,4 @@ func (r *Repository) GetLatestByUser(ctx context.Context, userID int64, limit in
 func (r *Repository) GetDistinctUserIDs(ctx context.Context) ([]int64, error) {
 	return r.queries.GetDistinctUserIDs(ctx)
 }
+

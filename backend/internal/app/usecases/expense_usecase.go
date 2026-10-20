@@ -8,6 +8,7 @@ import (
 	"backend/internal/app/mapper"
 	"backend/internal/domain/models"
 	"backend/internal/domain/port"
+	pkgerrs "backend/pkg/errs"
 
 	"github.com/google/uuid"
 )
@@ -58,7 +59,7 @@ func (u *ExpenseUseCase) CreateExpense(ctx context.Context, input dto.CreateExpe
 func (u *ExpenseUseCase) GetExpense(ctx context.Context, input dto.GetExpenseInput) (dto.GetExpenseOutput, error) {
 	id, err := uuid.Parse(input.ID)
 	if err != nil {
-		return dto.GetExpenseOutput{}, apperrs.ErrInvalidInput
+		return dto.GetExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
 	}
 
 	expense, err := u.repo.GetByID(ctx, id)
@@ -74,7 +75,7 @@ func (u *ExpenseUseCase) GetExpense(ctx context.Context, input dto.GetExpenseInp
 func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpenseInput) (dto.UpdateExpenseOutput, error) {
 	id, err := uuid.Parse(input.ID)
 	if err != nil {
-		return dto.UpdateExpenseOutput{}, apperrs.ErrInvalidInput
+		return dto.UpdateExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
 	}
 
 	existing, err := u.repo.GetByID(ctx, id)
@@ -113,7 +114,7 @@ func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpe
 func (u *ExpenseUseCase) DeleteExpense(ctx context.Context, input dto.DeleteExpenseInput) (dto.DeleteExpenseOutput, error) {
 	id, err := uuid.Parse(input.ID)
 	if err != nil {
-		return dto.DeleteExpenseOutput{}, apperrs.ErrInvalidInput
+		return dto.DeleteExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
 	}
 
 	if input.EnforceUserID {

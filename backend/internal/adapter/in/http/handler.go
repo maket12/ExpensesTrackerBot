@@ -10,6 +10,8 @@ import (
 	"backend/internal/adapter/in/http/mapper"
 	appdto "backend/internal/app/dto"
 	"backend/internal/app/usecases"
+	pkgerrs "backend/pkg/errs"
+	"backend/pkg/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -37,7 +39,7 @@ func NewHandler(expenseUseCase *usecases.ExpenseUseCase) *Handler {
 func (h *Handler) CreateExpense(c echo.Context) error {
 	var req dto.CreateExpenseRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request body"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: pkgerrs.ErrInvalidJSON.Error()})
 	}
 
 	out, err := h.expenseUseCase.CreateExpense(c.Request().Context(), mapper.ToCreateExpenseInput(req))
@@ -84,7 +86,7 @@ func (h *Handler) UpdateExpense(c echo.Context) error {
 	id := c.Param("id")
 	var req dto.UpdateExpenseRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request body"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: pkgerrs.ErrInvalidJSON.Error()})
 	}
 
 	out, err := h.expenseUseCase.UpdateExpense(c.Request().Context(), mapper.ToUpdateExpenseInput(id, req))
@@ -137,23 +139,23 @@ func (h *Handler) ListExpenses(c echo.Context) error {
 
 	if userIDStr := c.QueryParam("user_id"); userIDStr != "" {
 		if uid, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			input.UserID = &uid
+			input.UserID = utils.VPtr(uid)
 		}
 	}
 
 	if cat := c.QueryParam("category"); cat != "" {
-		input.Category = &cat
+		input.Category = utils.VPtr(cat)
 	}
 
 	if fromStr := c.QueryParam("from"); fromStr != "" {
 		if t, err := time.Parse(time.RFC3339, fromStr); err == nil {
-			input.From = &t
+			input.From = utils.VPtr(t)
 		}
 	}
 
 	if toStr := c.QueryParam("to"); toStr != "" {
 		if t, err := time.Parse(time.RFC3339, toStr); err == nil {
-			input.To = &t
+			input.To = utils.VPtr(t)
 		}
 	}
 

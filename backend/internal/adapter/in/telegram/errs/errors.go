@@ -1,9 +1,12 @@
 package errs
 
-import "errors"
+import (
+	pkgerrs "backend/pkg/errs"
+)
 
 var (
-	ErrEmptyToken   = errors.New("telegram bot token is empty")
-	ErrBotNotReady  = errors.New("telegram bot is not initialized")
-	ErrEmptyMessage = errors.New("telegram message text is empty")
+	ErrEmptyToken   = pkgerrs.NewValueRequiredError("telegram_bot_token")
+	ErrBotNotReady  = pkgerrs.NewValueInvalidError("telegram_bot_not_ready")
+	ErrEmptyMessage = pkgerrs.NewValueRequiredError("telegram_message_text")
 )
+

@@ -3,6 +3,7 @@ package mapper
 import (
 	"backend/internal/app/dto"
 	"backend/internal/domain/models"
+	"backend/pkg/utils"
 )
 
 func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
@@ -36,7 +37,7 @@ func ToDomainFilter(input dto.ListExpensesInput) (models.ExpenseFilter, error) {
 		if err != nil {
 			return models.ExpenseFilter{}, err
 		}
-		cat = &c
+		cat = utils.VPtr(c)
 	}
 
 	limit := input.Limit
@@ -58,3 +59,4 @@ func ToDomainFilter(input dto.ListExpensesInput) (models.ExpenseFilter, error) {
 		Offset:   offset,
 	}, nil
 }
+

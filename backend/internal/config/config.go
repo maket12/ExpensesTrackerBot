@@ -1,9 +1,11 @@
 package config
 
 import (
-	"fmt"
-	"net/url"
 	"os"
+	"strconv"
+	"time"
+
+	pkgpostgres "backend/pkg/postgres"
 )
 
 type Config struct {
@@ -49,10 +51,31 @@ func Load() *Config {
 	}
 }
 
+func (c *Config) PostgresConfig() *pkgpostgres.Config {
+	port, err := strconv.Atoi(c.DBPort)
+	if err != nil || port <= 0 {
+		port = 5432
+	}
+	return pkgpostgres.NewConfig(
+		c.DBHost,
+		port,
+		c.DBUser,
+		c.DBPassword,
+		c.DBName,
+		c.DBSSLMode,
+		20,
+		5,
+		time.Hour,
+		30*time.Minute,
+	)
+}
+
 func (c *Config) DSN() string {
-	escapedPassword := url.QueryEscape(c.DBPassword)
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.DBUser, escapedPassword, c.DBHost, c.DBPort, c.DBName, c.DBSSLMode)
+	return c.PostgresConfig().DSN()
+}
+
+func (c *Config) MigrationDSN() string {
+	return c.PostgresConfig().MigrationDSN()
 }
 
 func getEnv(key, defaultVal string) string {
@@ -71,3 +94,4 @@ func getEnvWithFallback(primaryKey, fallbackKey, defaultVal string) string {
 	}
 	return defaultVal
 }
+

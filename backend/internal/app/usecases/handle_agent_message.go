@@ -10,6 +10,7 @@ import (
 	"backend/internal/app/dto"
 	apperrs "backend/internal/app/errs"
 	"backend/internal/domain/port"
+	"backend/pkg/utils"
 )
 
 type AgentUseCase struct {
@@ -307,17 +308,17 @@ func (a *AgentUseCase) executeTool(ctx context.Context, userID int64, tc port.To
 		var fromTime, toTime *time.Time
 		if args.From != nil {
 			if t, err := time.Parse(time.RFC3339, *args.From); err == nil {
-				fromTime = &t
+				fromTime = utils.VPtr(t)
 			}
 		}
 		if args.To != nil {
 			if t, err := time.Parse(time.RFC3339, *args.To); err == nil {
-				toTime = &t
+				toTime = utils.VPtr(t)
 			}
 		}
 
 		out, err := a.expenseUseCase.ListExpenses(ctx, dto.ListExpensesInput{
-			UserID:   &userID,
+			UserID:   utils.VPtr(userID),
 			Category: args.Category,
 			From:     fromTime,
 			To:       toTime,

@@ -1,9 +1,14 @@
 package errs
 
-import "errors"
+import (
+	"errors"
+
+	pkgerrs "backend/pkg/errs"
+)
 
 var (
 	ErrConnectionFailed = errors.New("failed to connect to postgresql database")
-	ErrNotFound         = errors.New("record not found in postgresql")
+	ErrNotFound         = pkgerrs.ErrObjectNotFound
 	ErrExecutionFailed  = errors.New("database query execution failed")
 )
+

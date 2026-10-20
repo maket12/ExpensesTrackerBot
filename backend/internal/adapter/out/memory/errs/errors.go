@@ -1,7 +1,9 @@
 package errs
 
-import "errors"
+import (
+	pkgerrs "backend/pkg/errs"
+)
 
 var (
-	ErrEmptyMessage = errors.New("chat message content cannot be empty")
+	ErrEmptyMessage = pkgerrs.NewValueRequiredError("chat_message_content")
 )
