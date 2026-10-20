@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Col, Row, Statistic } from 'antd';
 import {
   DollarOutlined,
-  ShoppingBagOutlined,
+  ShoppingOutlined,
   FireOutlined,
 } from '@ant-design/icons';
 import { Expense } from '../types/expense';
@@ -47,7 +47,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ expenses }) => {
           <Statistic
             title="Количество операций"
             value={count}
-            prefix={<ShoppingBagOutlined style={{ color: '#52c41a' }} />}
+            prefix={<ShoppingOutlined style={{ color: '#52c41a' }} />}
           />
         </Card>
       </Col>

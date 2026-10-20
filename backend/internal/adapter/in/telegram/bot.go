@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -74,6 +75,7 @@ func (b *Bot) setupHandlers() {
 
 		out, err := b.agent.HandleMessage(ctx, mapper.ToAgentInput(req))
 		if err != nil {
+			slog.ErrorContext(ctx, "failed to handle message", "error", err)
 			return c.Send("Не удалось обработать запрос. Пожалуйста, попробуйте сформулировать иначе.")
 		}
 
