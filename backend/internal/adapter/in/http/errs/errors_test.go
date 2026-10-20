@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	apperrs "backend/internal/app/errs"
-	domainerrs "backend/internal/domain/errs"
+	"backend/internal/domain/models"
 	pkgerrs "backend/pkg/errs"
 )
 
@@ -17,8 +17,8 @@ func TestFromDomainOrAppError(t *testing.T) {
 		expectedCode int
 	}{
 		{
-			name:         "domain not found error",
-			err:          domainerrs.NewExpenseNotFoundError("test-id"),
+			name:         "not found error",
+			err:          pkgerrs.NewObjectNotFoundError("expense", "test-id"),
 			expectedCode: http.StatusNotFound,
 		},
 		{
@@ -27,28 +27,28 @@ func TestFromDomainOrAppError(t *testing.T) {
 			expectedCode: http.StatusNotFound,
 		},
 		{
-			name:         "forbidden error",
-			err:          domainerrs.ErrForbiddenAccess,
-			expectedCode: http.StatusForbidden,
-		},
-		{
 			name:         "app forbidden error",
 			err:          apperrs.ErrForbiddenAccess,
 			expectedCode: http.StatusForbidden,
 		},
 		{
 			name:         "invalid amount",
-			err:          domainerrs.ErrInvalidAmount,
+			err:          pkgerrs.NewValueInvalidError("amount"),
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name:         "invalid category",
-			err:          domainerrs.ErrInvalidCategory,
+			err:          pkgerrs.NewValueInvalidError("category"),
 			expectedCode: http.StatusBadRequest,
 		},
 		{
 			name:         "invalid user id",
-			err:          domainerrs.ErrInvalidUserID,
+			err:          pkgerrs.NewValueInvalidError("user_id"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:         "spent_at after created_at error",
+			err:          models.ErrSpentAtAfterCreatedAt,
 			expectedCode: http.StatusBadRequest,
 		},
 		{

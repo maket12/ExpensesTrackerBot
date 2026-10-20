@@ -5,18 +5,17 @@ import (
 	"net/http"
 
 	apperrs "backend/internal/app/errs"
-	domainerrs "backend/internal/domain/errs"
+	"backend/internal/domain/models"
 	pkgerrs "backend/pkg/errs"
 )
 
 func FromDomainOrAppError(err error) *pkgerrs.OutErr {
-	if errors.Is(err, domainerrs.ErrExpenseNotFound) ||
-		errors.Is(err, apperrs.ErrExpenseNotFound) ||
+	if errors.Is(err, apperrs.ErrExpenseNotFound) ||
 		errors.Is(err, pkgerrs.ErrObjectNotFound) {
 		return pkgerrs.NewOutError(http.StatusNotFound, err.Error(), err)
 	}
 
-	if errors.Is(err, domainerrs.ErrForbiddenAccess) || errors.Is(err, apperrs.ErrForbiddenAccess) {
+	if errors.Is(err, apperrs.ErrForbiddenAccess) {
 		return pkgerrs.NewOutError(http.StatusForbidden, err.Error(), err)
 	}
 
@@ -32,14 +31,10 @@ func FromDomainOrAppError(err error) *pkgerrs.OutErr {
 		errors.Is(err, pkgerrs.ErrValueIsRequired) ||
 		errors.Is(err, pkgerrs.ErrInvalidJSON) ||
 		errors.Is(err, pkgerrs.ErrInvalidIdentifier) ||
-		errors.Is(err, domainerrs.ErrInvalidAmount) ||
-		errors.Is(err, domainerrs.ErrInvalidCategory) ||
-		errors.Is(err, domainerrs.ErrInvalidUserID) ||
-		errors.Is(err, domainerrs.ErrInvalidSpentAt) ||
+		errors.Is(err, models.ErrSpentAtAfterCreatedAt) ||
 		errors.Is(err, apperrs.ErrInvalidInput) {
 		return pkgerrs.NewOutError(http.StatusBadRequest, err.Error(), err)
 	}
 
 	return pkgerrs.NewOutError(http.StatusInternalServerError, "internal server error", err)
 }
-

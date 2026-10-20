@@ -1,17 +1,19 @@
 package models
 
 import (
-	pkgerrs "backend/pkg/errs"
-	pkgutils "backend/pkg/utils"
+	"errors"
 	"math"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	pkgerrs "backend/pkg/errs"
+	pkgutils "backend/pkg/utils"
+
 	"github.com/google/uuid"
 )
 
-// ================ Value Objects of Expense ================
+var ErrSpentAtAfterCreatedAt = errors.New("spent_at cannot be after created_at")
 
 type Category string
 
@@ -43,8 +45,6 @@ func NewCategory(val string) (Category, error) {
 	}
 	return c, nil
 }
-
-// ================ Rich model for Expense ================
 
 const (
 	minAmount, maxAmount         = 1.0, 1000000.0
@@ -88,8 +88,11 @@ func NewExpense(
 
 	now := time.Now().UTC()
 
-	if spentAt.IsZero() || spentAt.Before(earliestSpentAt) || spentAt.After(now) {
+	if spentAt.IsZero() || spentAt.Before(earliestSpentAt) {
 		return nil, pkgerrs.NewValueInvalidError("spent_at")
+	}
+	if spentAt.After(now) {
+		return nil, ErrSpentAtAfterCreatedAt
 	}
 
 	var trimmedComm *string
@@ -143,7 +146,17 @@ func RestoreExpense(
 	}
 }
 
-// ================ Read-Only ================
+func ReconstituteExpense(
+	id uuid.UUID,
+	userID int64,
+	amount float64,
+	category Category,
+	spentAt time.Time,
+	comment string,
+	createdAt, updatedAt time.Time,
+) *Expense {
+	return RestoreExpense(id, userID, amount, category, spentAt, comment, createdAt, updatedAt)
+}
 
 func (e *Expense) ID() uuid.UUID        { return e.id }
 func (e *Expense) UserID() int64        { return e.userID }
@@ -154,46 +167,52 @@ func (e *Expense) Comment() *string     { return e.comment }
 func (e *Expense) CreatedAt() time.Time { return e.createdAt }
 func (e *Expense) UpdatedAt() time.Time { return e.updatedAt }
 
-// ================ Mutation ================
-
 func (e *Expense) Update(
-	amount float64,
-	rawCategory string,
-	spentAt time.Time,
+	amount *float64,
+	rawCategory *string,
+	spentAt *time.Time,
 	comment *string,
 ) error {
-	roundedAmount := math.Round(amount*100) / 100
-	if roundedAmount < minAmount || roundedAmount > maxAmount {
-		return pkgerrs.NewValueInvalidError("amount")
+	if amount != nil {
+		roundedAmount := math.Round(*amount*100) / 100
+		if roundedAmount < minAmount || roundedAmount > maxAmount {
+			return pkgerrs.NewValueInvalidError("amount")
+		}
+		e.amount = roundedAmount
 	}
 
-	cat := Category(rawCategory)
-	if !cat.IsValid() {
-		return pkgerrs.NewValueInvalidError("category")
+	if rawCategory != nil {
+		cat := Category(*rawCategory)
+		if !cat.IsValid() {
+			return pkgerrs.NewValueInvalidError("category")
+		}
+		e.category = cat
 	}
 
-	now := time.Now().UTC()
-
-	if spentAt.IsZero() || spentAt.Before(earliestSpentAt) || spentAt.After(now) {
-		return pkgerrs.NewValueInvalidError("spent_at")
+	if spentAt != nil {
+		t := *spentAt
+		if t.IsZero() || t.Before(earliestSpentAt) {
+			return pkgerrs.NewValueInvalidError("spent_at")
+		}
+		if t.After(e.createdAt) {
+			return ErrSpentAtAfterCreatedAt
+		}
+		e.spentAt = t.UTC()
 	}
 
-	var trimmedComm *string
 	if comment != nil {
 		trimmed := strings.TrimSpace(*comment)
-		if trimmed != "" {
+		if trimmed == "" {
+			e.comment = nil
+		} else {
 			commLen := utf8.RuneCountInString(trimmed)
 			if commLen < minCommentLen || commLen > maxCommentLen {
 				return pkgerrs.NewValueInvalidError("comment")
 			}
-			trimmedComm = pkgutils.VPtr(trimmed)
+			e.comment = pkgutils.VPtr(trimmed)
 		}
 	}
 
-	e.amount = roundedAmount
-	e.category = cat
-	e.spentAt = spentAt.UTC()
-	e.comment = trimmedComm
-	e.updatedAt = now
+	e.updatedAt = time.Now().UTC()
 	return nil
 }

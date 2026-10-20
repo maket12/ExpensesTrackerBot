@@ -6,8 +6,8 @@ import (
 
 	"backend/internal/adapter/out/postgres/mapper"
 	"backend/internal/adapter/out/postgres/sqlc"
-	domainerrs "backend/internal/domain/errs"
 	"backend/internal/domain/models"
+	pkgerrs "backend/pkg/errs"
 	pkgpostgres "backend/pkg/postgres"
 
 	"github.com/google/uuid"
@@ -49,7 +49,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Expense
 	row, err := r.queries.GetExpenseByID(ctx, pkgpostgres.MapToPgUUID(id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrs.NewExpenseNotFoundError(id)
+			return nil, pkgerrs.NewObjectNotFoundError("expense", id)
 		}
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (r *Repository) Update(ctx context.Context, expense *models.Expense) (*mode
 	row, err := r.queries.UpdateExpense(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrs.NewExpenseNotFoundError(expense.ID())
+			return nil, pkgerrs.NewObjectNotFoundError("expense", expense.ID())
 		}
 		return nil, err
 	}
