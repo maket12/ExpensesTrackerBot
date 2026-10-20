@@ -11,7 +11,6 @@ import (
 	appdto "backend/internal/app/dto"
 	"backend/internal/app/usecases"
 	pkgerrs "backend/pkg/errs"
-	"backend/pkg/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -139,23 +138,23 @@ func (h *Handler) ListExpenses(c echo.Context) error {
 
 	if userIDStr := c.QueryParam("user_id"); userIDStr != "" {
 		if uid, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			input.UserID = utils.VPtr(uid)
+			input.UserID = &uid
 		}
 	}
 
 	if cat := c.QueryParam("category"); cat != "" {
-		input.Category = utils.VPtr(cat)
+		input.Category = &cat
 	}
 
 	if fromStr := c.QueryParam("from"); fromStr != "" {
 		if t, err := time.Parse(time.RFC3339, fromStr); err == nil {
-			input.From = utils.VPtr(t)
+			input.From = &t
 		}
 	}
 
 	if toStr := c.QueryParam("to"); toStr != "" {
 		if t, err := time.Parse(time.RFC3339, toStr); err == nil {
-			input.To = utils.VPtr(t)
+			input.To = &t
 		}
 	}
 
