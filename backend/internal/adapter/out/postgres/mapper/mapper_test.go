@@ -59,18 +59,8 @@ func TestMapperTimestamptz(t *testing.T) {
 }
 
 func TestMapperParamsAndDomain(t *testing.T) {
-	amount, err := models.NewAmount(120.50)
-	if err != nil {
-		t.Fatalf("unexpected error creating amount: %v", err)
-	}
-
-	cat, err := models.NewCategory("еда")
-	if err != nil {
-		t.Fatalf("unexpected error creating category: %v", err)
-	}
-
-	spentAt := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
-	expense, err := models.NewExpense(12345, amount, cat, spentAt, "обед")
+	spentAt := time.Now().UTC().Add(-time.Hour)
+	expense, err := models.NewExpense(12345, 120.50, "еда", spentAt, utils.VPtr("обед"))
 	if err != nil {
 		t.Fatalf("unexpected error creating expense: %v", err)
 	}
@@ -127,10 +117,13 @@ func TestMapperParamsAndDomain(t *testing.T) {
 	if domainExpense.ID() != expense.ID() {
 		t.Errorf("expected ID %v, got %v", expense.ID(), domainExpense.ID())
 	}
-	if domainExpense.Amount().Value() != 120.50 {
-		t.Errorf("expected amount 120.50, got %f", domainExpense.Amount().Value())
+	if domainExpense.Amount() != 120.50 {
+		t.Errorf("expected amount 120.50, got %f", domainExpense.Amount())
 	}
 	if domainExpense.Category() != models.CategoryFood {
 		t.Errorf("expected category %v, got %v", models.CategoryFood, domainExpense.Category())
+	}
+	if domainExpense.Comment() == nil || *domainExpense.Comment() != "обед" {
+		t.Errorf("expected comment 'обед', got %v", domainExpense.Comment())
 	}
 }

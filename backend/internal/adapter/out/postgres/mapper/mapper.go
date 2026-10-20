@@ -46,20 +46,15 @@ func ToDomainExpense(row sqlc.Expense) (*models.Expense, error) {
 		return nil, err
 	}
 
-	amount, err := models.NewAmount(amountVal)
-	if err != nil {
-		return nil, err
-	}
-
 	category, err := models.NewCategory(row.Category)
 	if err != nil {
 		return nil, err
 	}
 
-	return models.ReconstituteExpense(
+	return models.RestoreExpense(
 		FromPgUUID(row.ID),
 		row.UserID,
-		amount,
+		amountVal,
 		category,
 		FromPgTimestamptz(row.SpentAt),
 		row.Comment,
@@ -81,25 +76,33 @@ func ToDomainExpenses(rows []sqlc.Expense) ([]*models.Expense, error) {
 }
 
 func ToCreateExpenseParams(e *models.Expense) sqlc.CreateExpenseParams {
+	var comment string
+	if e.Comment() != nil {
+		comment = *e.Comment()
+	}
 	return sqlc.CreateExpenseParams{
 		ID:        ToPgUUID(e.ID()),
 		UserID:    e.UserID(),
-		Amount:    ToPgNumeric(e.Amount().Value()),
+		Amount:    ToPgNumeric(e.Amount()),
 		Category:  e.Category().String(),
 		SpentAt:   ToPgTimestamptz(e.SpentAt()),
-		Comment:   e.Comment(),
+		Comment:   comment,
 		CreatedAt: ToPgTimestamptz(e.CreatedAt()),
 		UpdatedAt: ToPgTimestamptz(e.UpdatedAt()),
 	}
 }
 
 func ToUpdateExpenseParams(e *models.Expense) sqlc.UpdateExpenseParams {
+	var comment string
+	if e.Comment() != nil {
+		comment = *e.Comment()
+	}
 	return sqlc.UpdateExpenseParams{
 		ID:        ToPgUUID(e.ID()),
-		Amount:    ToPgNumeric(e.Amount().Value()),
+		Amount:    ToPgNumeric(e.Amount()),
 		Category:  e.Category().String(),
 		SpentAt:   ToPgTimestamptz(e.SpentAt()),
-		Comment:   e.Comment(),
+		Comment:   comment,
 		UpdatedAt: ToPgTimestamptz(e.UpdatedAt()),
 	}
 }

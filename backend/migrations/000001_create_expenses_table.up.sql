@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS expenses (
         'еда', 'транспорт', 'жильё', 'развлечения', 'здоровье', 'покупки', 'другое'
     )),
     spent_at TIMESTAMPTZ NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
+    comment TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

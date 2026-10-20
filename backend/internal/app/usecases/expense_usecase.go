@@ -24,22 +24,17 @@ func NewExpenseUseCase(repo port.ExpenseRepository) *ExpenseUseCase {
 }
 
 func (u *ExpenseUseCase) CreateExpense(ctx context.Context, input dto.CreateExpenseInput) (dto.CreateExpenseOutput, error) {
-	amount, err := models.NewAmount(input.Amount)
-	if err != nil {
-		return dto.CreateExpenseOutput{}, err
-	}
-
-	category, err := models.NewCategory(input.Category)
-	if err != nil {
-		return dto.CreateExpenseOutput{}, err
+	var commPtr *string
+	if input.Comment != "" {
+		commPtr = &input.Comment
 	}
 
 	expense, err := models.NewExpense(
 		input.UserID,
-		amount,
-		category,
+		input.Amount,
+		input.Category,
 		input.SpentAt,
-		input.Comment,
+		commPtr,
 	)
 	if err != nil {
 		return dto.CreateExpenseOutput{}, err
@@ -86,17 +81,12 @@ func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpe
 		return dto.UpdateExpenseOutput{}, apperrs.ErrForbiddenAccess
 	}
 
-	amount, err := models.NewAmount(input.Amount)
-	if err != nil {
-		return dto.UpdateExpenseOutput{}, err
+	var commPtr *string
+	if input.Comment != "" {
+		commPtr = &input.Comment
 	}
 
-	category, err := models.NewCategory(input.Category)
-	if err != nil {
-		return dto.UpdateExpenseOutput{}, err
-	}
-
-	if err := existing.Update(amount, category, input.SpentAt, input.Comment); err != nil {
+	if err := existing.Update(input.Amount, input.Category, input.SpentAt, commPtr); err != nil {
 		return dto.UpdateExpenseOutput{}, err
 	}
 

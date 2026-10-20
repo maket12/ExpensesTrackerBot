@@ -9,13 +9,17 @@ func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
 	if e == nil {
 		return dto.ExpenseDTO{}
 	}
+	var comment string
+	if e.Comment() != nil {
+		comment = *e.Comment()
+	}
 	return dto.ExpenseDTO{
 		ID:        e.ID().String(),
 		UserID:    e.UserID(),
-		Amount:    e.Amount().Value(),
+		Amount:    e.Amount(),
 		Category:  e.Category().String(),
 		SpentAt:   e.SpentAt(),
-		Comment:   e.Comment(),
+		Comment:   comment,
 		CreatedAt: e.CreatedAt(),
 		UpdatedAt: e.UpdatedAt(),
 	}
