@@ -1,6 +1,7 @@
 package http
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,17 +37,21 @@ func NewHandler(expenseUseCase *usecases.ExpenseUseCase) *Handler {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses [post]
 func (h *Handler) CreateExpense(c echo.Context) error {
+	ctx := c.Request().Context()
 	var req dto.CreateExpenseRequest
 	if err := c.Bind(&req); err != nil {
+		slog.WarnContext(ctx, "HTTP create expense: invalid body", "error", err)
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: pkgerrs.ErrInvalidJSON.Error()})
 	}
 
-	out, err := h.expenseUseCase.CreateExpense(c.Request().Context(), mapper.ToCreateExpenseInput(req))
+	out, err := h.expenseUseCase.CreateExpense(ctx, mapper.ToCreateExpenseInput(req))
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP create expense failed", "user_id", req.UserID, "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.InfoContext(ctx, "HTTP create expense success", "expense_id", out.Expense.ID, "user_id", out.Expense.UserID, "amount", out.Expense.Amount)
 	return c.JSON(http.StatusCreated, mapper.ToExpenseResponse(out.Expense))
 }
 
@@ -59,14 +64,17 @@ func (h *Handler) CreateExpense(c echo.Context) error {
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [get]
 func (h *Handler) GetExpense(c echo.Context) error {
+	ctx := c.Request().Context()
 	id := c.Param("id")
 
-	out, err := h.expenseUseCase.GetExpense(c.Request().Context(), appdto.GetExpenseInput{ID: id})
+	out, err := h.expenseUseCase.GetExpense(ctx, appdto.GetExpenseInput{ID: id})
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP get expense failed", "id", id, "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.DebugContext(ctx, "HTTP get expense success", "id", id)
 	return c.JSON(http.StatusOK, mapper.ToExpenseResponse(out.Expense))
 }
 
@@ -82,18 +90,22 @@ func (h *Handler) GetExpense(c echo.Context) error {
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [put]
 func (h *Handler) UpdateExpense(c echo.Context) error {
+	ctx := c.Request().Context()
 	id := c.Param("id")
 	var req dto.UpdateExpenseRequest
 	if err := c.Bind(&req); err != nil {
+		slog.WarnContext(ctx, "HTTP update expense: invalid body", "id", id, "error", err)
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: pkgerrs.ErrInvalidJSON.Error()})
 	}
 
-	out, err := h.expenseUseCase.UpdateExpense(c.Request().Context(), mapper.ToUpdateExpenseInput(id, req))
+	out, err := h.expenseUseCase.UpdateExpense(ctx, mapper.ToUpdateExpenseInput(id, req))
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP update expense failed", "id", id, "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.InfoContext(ctx, "HTTP update expense success", "id", id, "amount", out.Expense.Amount, "category", out.Expense.Category)
 	return c.JSON(http.StatusOK, mapper.ToExpenseResponse(out.Expense))
 }
 
@@ -106,17 +118,20 @@ func (h *Handler) UpdateExpense(c echo.Context) error {
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [delete]
 func (h *Handler) DeleteExpense(c echo.Context) error {
+	ctx := c.Request().Context()
 	id := c.Param("id")
 
-	_, err := h.expenseUseCase.DeleteExpense(c.Request().Context(), appdto.DeleteExpenseInput{
+	_, err := h.expenseUseCase.DeleteExpense(ctx, appdto.DeleteExpenseInput{
 		ID:            id,
 		EnforceUserID: false,
 	})
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP delete expense failed", "id", id, "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.InfoContext(ctx, "HTTP delete expense success", "id", id)
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -134,6 +149,7 @@ func (h *Handler) DeleteExpense(c echo.Context) error {
 // @Failure 400 {object} dto.ErrorResponse
 // @Router /api/expenses [get]
 func (h *Handler) ListExpenses(c echo.Context) error {
+	ctx := c.Request().Context()
 	var input appdto.ListExpensesInput
 
 	if userIDStr := c.QueryParam("user_id"); userIDStr != "" {
@@ -170,12 +186,14 @@ func (h *Handler) ListExpenses(c echo.Context) error {
 		}
 	}
 
-	out, err := h.expenseUseCase.ListExpenses(c.Request().Context(), input)
+	out, err := h.expenseUseCase.ListExpenses(ctx, input)
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP list expenses failed", "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.DebugContext(ctx, "HTTP list expenses success", "count", len(out.Expenses))
 	return c.JSON(http.StatusOK, dto.ListExpensesResponse{
 		Items: mapper.ToExpenseResponses(out.Expenses),
 	})
@@ -188,12 +206,15 @@ func (h *Handler) ListExpenses(c echo.Context) error {
 // @Success 200 {object} dto.GetDistinctUsersResponse
 // @Router /api/users [get]
 func (h *Handler) GetDistinctUsers(c echo.Context) error {
-	out, err := h.expenseUseCase.GetDistinctUsers(c.Request().Context(), appdto.GetDistinctUsersInput{})
+	ctx := c.Request().Context()
+	out, err := h.expenseUseCase.GetDistinctUsers(ctx, appdto.GetDistinctUsersInput{})
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP get distinct users failed", "error", err, "code", httpErr.Code)
 		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
 	}
 
+	slog.DebugContext(ctx, "HTTP get distinct users success", "count", len(out.UserIDs))
 	return c.JSON(http.StatusOK, dto.GetDistinctUsersResponse{
 		UserIDs: out.UserIDs,
 	})

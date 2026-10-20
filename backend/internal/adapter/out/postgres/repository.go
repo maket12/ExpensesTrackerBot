@@ -61,7 +61,7 @@ func (r *Repository) Update(ctx context.Context, expense *models.Expense) (*mode
 	row, err := r.queries.UpdateExpense(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domainerrs.NewExpenseNotFoundError(expense.ID)
+			return nil, domainerrs.NewExpenseNotFoundError(expense.ID())
 		}
 		return nil, err
 	}

@@ -3,7 +3,7 @@ import { Table, Tag, Button, Space, Popconfirm, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { Expense, ExpenseCategory } from '../types/expense';
+import { Expense, ExpenseCategory, formatCategory } from '../types/expense';
 
 interface ExpensesTableProps {
   expenses: Expense[];
@@ -51,7 +51,7 @@ export const ExpensesTable: React.FC<ExpensesTableProps> = ({
       key: 'category',
       render: (cat: ExpenseCategory) => (
         <Tag color={categoryColors[cat] || 'default'}>
-          {cat.toUpperCase()}
+          {formatCategory(cat)}
         </Tag>
       ),
       width: 150,

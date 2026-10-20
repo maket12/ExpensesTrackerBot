@@ -34,7 +34,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "category",
                         "name": "category",
                         "in": "query"
                     },

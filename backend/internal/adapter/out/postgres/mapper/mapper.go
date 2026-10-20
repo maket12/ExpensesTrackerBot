@@ -56,16 +56,16 @@ func ToDomainExpense(row sqlc.Expense) (*models.Expense, error) {
 		return nil, err
 	}
 
-	return &models.Expense{
-		ID:        FromPgUUID(row.ID),
-		UserID:    row.UserID,
-		Amount:    amount,
-		Category:  category,
-		SpentAt:   FromPgTimestamptz(row.SpentAt),
-		Comment:   row.Comment,
-		CreatedAt: FromPgTimestamptz(row.CreatedAt),
-		UpdatedAt: FromPgTimestamptz(row.UpdatedAt),
-	}, nil
+	return models.ReconstituteExpense(
+		FromPgUUID(row.ID),
+		row.UserID,
+		amount,
+		category,
+		FromPgTimestamptz(row.SpentAt),
+		row.Comment,
+		FromPgTimestamptz(row.CreatedAt),
+		FromPgTimestamptz(row.UpdatedAt),
+	), nil
 }
 
 func ToDomainExpenses(rows []sqlc.Expense) ([]*models.Expense, error) {
@@ -82,25 +82,25 @@ func ToDomainExpenses(rows []sqlc.Expense) ([]*models.Expense, error) {
 
 func ToCreateExpenseParams(e *models.Expense) sqlc.CreateExpenseParams {
 	return sqlc.CreateExpenseParams{
-		ID:        ToPgUUID(e.ID),
-		UserID:    e.UserID,
-		Amount:    ToPgNumeric(e.Amount.Value()),
-		Category:  e.Category.String(),
-		SpentAt:   ToPgTimestamptz(e.SpentAt),
-		Comment:   e.Comment,
-		CreatedAt: ToPgTimestamptz(e.CreatedAt),
-		UpdatedAt: ToPgTimestamptz(e.UpdatedAt),
+		ID:        ToPgUUID(e.ID()),
+		UserID:    e.UserID(),
+		Amount:    ToPgNumeric(e.Amount().Value()),
+		Category:  e.Category().String(),
+		SpentAt:   ToPgTimestamptz(e.SpentAt()),
+		Comment:   e.Comment(),
+		CreatedAt: ToPgTimestamptz(e.CreatedAt()),
+		UpdatedAt: ToPgTimestamptz(e.UpdatedAt()),
 	}
 }
 
 func ToUpdateExpenseParams(e *models.Expense) sqlc.UpdateExpenseParams {
 	return sqlc.UpdateExpenseParams{
-		ID:        ToPgUUID(e.ID),
-		Amount:    ToPgNumeric(e.Amount.Value()),
-		Category:  e.Category.String(),
-		SpentAt:   ToPgTimestamptz(e.SpentAt),
-		Comment:   e.Comment,
-		UpdatedAt: ToPgTimestamptz(e.UpdatedAt),
+		ID:        ToPgUUID(e.ID()),
+		Amount:    ToPgNumeric(e.Amount().Value()),
+		Category:  e.Category().String(),
+		SpentAt:   ToPgTimestamptz(e.SpentAt()),
+		Comment:   e.Comment(),
+		UpdatedAt: ToPgTimestamptz(e.UpdatedAt()),
 	}
 }
 
@@ -136,4 +136,3 @@ func ToListExpensesFilteredParams(filter models.ExpenseFilter) sqlc.ListExpenses
 		Offset:   offset,
 	}
 }
-

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +26,13 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
 	cfg := config.Load()
+	slog.Info("configuration loaded", "port", cfg.Port, "db_host", cfg.DBHost, "db_port", cfg.DBPort, "db_name", cfg.DBName, "llm_model", cfg.LLMModel)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -36,9 +42,11 @@ func main() {
 
 	pgClient, err := pkgpostgres.NewClient(ctx, pgCfg)
 	if err != nil {
-		log.Fatalf("failed to create postgres client: %v", err)
+		slog.Error("failed to create postgres client", "error", err)
+		os.Exit(1)
 	}
 	defer pgClient.Close()
+	slog.Info("connected to postgresql successfully")
 
 	repo := postgresadapter.NewRepository(pgClient)
 	expenseUseCase := usecases.NewExpenseUseCase(repo)
@@ -48,10 +56,13 @@ func main() {
 	if cfg.LLMAPIKey != "" {
 		llmClient, err := llm.NewClient(cfg.LLMBaseURL, cfg.LLMAPIKey, cfg.LLMModel)
 		if err != nil {
-			log.Printf("warning: failed to initialize llm client: %v", err)
+			slog.Warn("failed to initialize llm client", "error", err)
 		} else {
 			agentUseCase = usecases.NewAgentUseCase(expenseUseCase, llmClient, memoryStore)
+			slog.Info("LLM client initialized", "model", cfg.LLMModel, "base_url", cfg.LLMBaseURL)
 		}
+	} else {
+		slog.Warn("LLM_API_KEY is not set, AI features will be disabled")
 	}
 
 	httpHandler := httpadapter.NewHandler(expenseUseCase)
@@ -61,18 +72,22 @@ func main() {
 	if cfg.TelegramBotToken != "" && agentUseCase != nil {
 		bot, err := tgadapter.NewBot(cfg.TelegramBotToken, agentUseCase)
 		if err != nil {
-			log.Printf("warning: failed to initialize telegram bot: %v", err)
+			slog.Warn("failed to initialize telegram bot", "error", err)
 		} else {
 			tgBot = bot
+			slog.Info("telegram bot initialized successfully")
 		}
+	} else if cfg.TelegramBotToken == "" {
+		slog.Warn("TELEGRAM_BOT_TOKEN is not set, telegram bot will not run")
 	}
 
 	g, gCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		addr := ":" + cfg.Port
-		log.Printf("starting HTTP server on %s", addr)
+		slog.Info("starting HTTP server", "address", addr)
 		if err := echoRouter.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("HTTP server failed", "error", err)
 			return err
 		}
 		return nil
@@ -82,43 +97,43 @@ func main() {
 		<-gCtx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		log.Printf("shutting down HTTP server")
+		slog.Info("shutting down HTTP server")
 		return echoRouter.Shutdown(shutdownCtx)
 	})
 
 	if tgBot != nil {
 		g.Go(func() error {
-			log.Printf("starting Telegram bot long polling")
+			slog.Info("starting Telegram bot long polling")
 			tgBot.Start()
 			return nil
 		})
 
 		g.Go(func() error {
 			<-gCtx.Done()
-			log.Printf("stopping Telegram bot")
+			slog.Info("stopping Telegram bot")
 			tgBot.Stop()
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		log.Printf("application stopped with error: %v", err)
+		slog.Error("application stopped with error", "error", err)
 	} else {
-		log.Printf("application gracefully stopped")
+		slog.Info("application gracefully stopped")
 	}
 }
 
 func runMigrations(dsn string) {
 	m, err := migrate.New("file://migrations", dsn)
 	if err != nil {
-		log.Printf("migration init warning: %v", err)
+		slog.Warn("migration init warning", "error", err)
 		return
 	}
 	defer m.Close()
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Printf("migration up warning: %v", err)
+		slog.Warn("migration up warning", "error", err)
 	} else {
-		log.Printf("migrations applied successfully")
+		slog.Info("database migrations applied successfully")
 	}
 }

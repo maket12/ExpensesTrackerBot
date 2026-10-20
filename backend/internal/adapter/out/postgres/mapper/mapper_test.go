@@ -69,9 +69,8 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Fatalf("unexpected error creating category: %v", err)
 	}
 
-	id := uuid.New()
 	spentAt := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
-	expense, err := models.NewExpense(id, 12345, amount, cat, spentAt, "обед")
+	expense, err := models.NewExpense(12345, amount, cat, spentAt, "обед")
 	if err != nil {
 		t.Fatalf("unexpected error creating expense: %v", err)
 	}
@@ -81,12 +80,12 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Errorf("expected UserID 12345, got %d", createParams.UserID)
 	}
 	if createParams.Category != "еда" {
-		t.Errorf("expected Category 'еда', got %s", createParams.Category)
+		t.Errorf("expected category 'еда', got %s", createParams.Category)
 	}
 
 	updateParams := ToUpdateExpenseParams(expense)
 	if updateParams.Category != "еда" {
-		t.Errorf("expected Category 'еда', got %s", updateParams.Category)
+		t.Errorf("expected category 'еда', got %s", updateParams.Category)
 	}
 
 	filter := models.ExpenseFilter{
@@ -103,7 +102,7 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Errorf("expected UserID 12345, got %d", *listParams.UserID)
 	}
 	if *listParams.Category != "еда" {
-		t.Errorf("expected Category 'еда', got %s", *listParams.Category)
+		t.Errorf("expected category 'еда', got %s", *listParams.Category)
 	}
 	if !listParams.From.Valid || !listParams.To.Valid {
 		t.Errorf("expected From and To to be valid")
@@ -125,13 +124,13 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Fatalf("unexpected error converting to domain: %v", err)
 	}
 
-	if domainExpense.ID != id {
-		t.Errorf("expected ID %v, got %v", id, domainExpense.ID)
+	if domainExpense.ID() != expense.ID() {
+		t.Errorf("expected ID %v, got %v", expense.ID(), domainExpense.ID())
 	}
-	if domainExpense.Amount.Value() != 120.50 {
-		t.Errorf("expected amount 120.50, got %f", domainExpense.Amount.Value())
+	if domainExpense.Amount().Value() != 120.50 {
+		t.Errorf("expected amount 120.50, got %f", domainExpense.Amount().Value())
 	}
-	if domainExpense.Category != models.CategoryFood {
-		t.Errorf("expected category %v, got %v", models.CategoryFood, domainExpense.Category)
+	if domainExpense.Category() != models.CategoryFood {
+		t.Errorf("expected category %v, got %v", models.CategoryFood, domainExpense.Category())
 	}
 }

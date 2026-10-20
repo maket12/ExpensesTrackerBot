@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Layout, Button, message, Space, Typography } from 'antd';
-import { PlusOutlined, ApiOutlined } from '@ant-design/icons';
+import { PlusOutlined, ApiOutlined, WalletOutlined } from '@ant-design/icons';
 import { api } from './services/api';
 import {
   Expense,
@@ -110,22 +110,44 @@ export const App: React.FC = () => {
     <Layout style={{ minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Header
         style={{
-          background: '#fff',
-          padding: '0 32px',
+          background: '#ffffff',
+          padding: '20px 36px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid #f0f0f0',
-          height: 72,
+          minHeight: 88,
+          height: 'auto',
+          lineHeight: 'normal',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
         }}
       >
-        <div>
-          <Title level={4} style={{ margin: 0, color: '#1f1f1f' }}>
-            Семейный бюджет
-          </Title>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Панель управления расходами для главы семьи
-          </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #1677ff 0%, #0958d9 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: 22,
+              boxShadow: '0 4px 10px rgba(22, 119, 255, 0.25)',
+              flexShrink: 0,
+            }}
+          >
+            <WalletOutlined />
+          </div>
+          <div>
+            <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1f1f1f', lineHeight: 1.25 }}>
+              Семейный бюджет
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block', lineHeight: 1.4 }}>
+              Панель управления расходами для главы семьи
+            </Text>
+          </div>
         </div>
 
         <Space size="middle">
@@ -133,6 +155,7 @@ export const App: React.FC = () => {
             icon={<ApiOutlined />}
             href="/swagger/index.html"
             target="_blank"
+            size="middle"
           >
             Swagger API
           </Button>
@@ -141,14 +164,14 @@ export const App: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={handleOpenCreate}
             size="large"
-            style={{ borderRadius: 6 }}
+            style={{ borderRadius: 6, fontWeight: 500 }}
           >
             Добавить расход
           </Button>
         </Space>
       </Header>
 
-      <Content style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+      <Content style={{ padding: '28px 36px', maxWidth: 1440, margin: '0 auto', width: '100%' }}>
         <SummaryCards expenses={expenses} />
 
         <FiltersBar

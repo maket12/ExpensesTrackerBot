@@ -5,7 +5,7 @@ import {
   ShoppingOutlined,
   FireOutlined,
 } from '@ant-design/icons';
-import { Expense } from '../types/expense';
+import { Expense, formatCategory } from '../types/expense';
 
 interface SummaryCardsProps {
   expenses: Expense[];
@@ -55,7 +55,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ expenses }) => {
         <Card bordered={false} style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
           <Statistic
             title="Главная статья расходов"
-            value={topCategory}
+            value={topCategory !== '—' ? formatCategory(topCategory) : '—'}
             prefix={<FireOutlined style={{ color: '#fa8c16' }} />}
             suffix={topCategoryAmount > 0 ? `(${topCategoryAmount.toFixed(0)} ₽)` : ''}
           />

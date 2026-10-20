@@ -56,5 +56,6 @@ func (c *Client) GenerateResponse(ctx context.Context, messages []port.AgentMess
 		return port.AgentResponse{}, errs.ErrEmptyResponse
 	}
 
-	return mapper.ToDomainAgentResponse(resp.Choices[0]), nil
+	choice := resp.Choices[0]
+	return mapper.ToDomainAgentResponse(choice), nil
 }

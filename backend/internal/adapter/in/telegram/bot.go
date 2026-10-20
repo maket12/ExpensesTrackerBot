@@ -46,6 +46,7 @@ func NewBot(token string, agent *usecases.AgentUseCase) (*Bot, error) {
 
 func (b *Bot) setupHandlers() {
 	b.bot.Handle("/start", func(c telebot.Context) error {
+		slog.Info("Telegram /start received", "user_id", c.Sender().ID, "username", c.Sender().Username)
 		greeting := `Привет! Я помогу вести учёт расходов.
 
 Просто пиши свои траты обычным текстом:
@@ -63,6 +64,8 @@ func (b *Bot) setupHandlers() {
 			return nil
 		}
 
+		slog.Info("Telegram message received", "user_id", c.Sender().ID, "text", text)
+		start := time.Now()
 		_ = c.Notify(telebot.Typing)
 
 		req := dto.ProcessMessageRequest{
@@ -75,11 +78,12 @@ func (b *Bot) setupHandlers() {
 
 		out, err := b.agent.HandleMessage(ctx, mapper.ToAgentInput(req))
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to handle message", "error", err)
+			slog.ErrorContext(ctx, "failed to handle telegram message", "user_id", req.UserID, "error", err, "duration", time.Since(start))
 			return c.Send("Не удалось обработать запрос. Пожалуйста, попробуйте сформулировать иначе.")
 		}
 
 		resp := mapper.ToTelegramResponse(out)
+		slog.InfoContext(ctx, "Telegram message handled successfully", "user_id", req.UserID, "duration", time.Since(start))
 		return c.Send(resp.Text)
 	})
 }

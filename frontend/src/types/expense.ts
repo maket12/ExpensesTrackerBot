@@ -17,6 +17,11 @@ export const ALL_CATEGORIES: ExpenseCategory[] = [
   'другое',
 ];
 
+export const formatCategory = (cat?: string): string => {
+  if (!cat) return '';
+  return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+};
+
 export interface Expense {
   id: string;
   user_id: number;

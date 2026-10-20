@@ -10,14 +10,14 @@ func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
 		return dto.ExpenseDTO{}
 	}
 	return dto.ExpenseDTO{
-		ID:        e.ID.String(),
-		UserID:    e.UserID,
-		Amount:    e.Amount.Value(),
-		Category:  e.Category.String(),
-		SpentAt:   e.SpentAt,
-		Comment:   e.Comment,
-		CreatedAt: e.CreatedAt,
-		UpdatedAt: e.UpdatedAt,
+		ID:        e.ID().String(),
+		UserID:    e.UserID(),
+		Amount:    e.Amount().Value(),
+		Category:  e.Category().String(),
+		SpentAt:   e.SpentAt(),
+		Comment:   e.Comment(),
+		CreatedAt: e.CreatedAt(),
+		UpdatedAt: e.UpdatedAt(),
 	}
 }
 
@@ -58,4 +58,3 @@ func ToDomainFilter(input dto.ListExpensesInput) (models.ExpenseFilter, error) {
 		Offset:   offset,
 	}, nil
 }
-

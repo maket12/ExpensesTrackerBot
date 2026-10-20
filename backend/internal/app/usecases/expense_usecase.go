@@ -35,7 +35,6 @@ func (u *ExpenseUseCase) CreateExpense(ctx context.Context, input dto.CreateExpe
 	}
 
 	expense, err := models.NewExpense(
-		uuid.Nil,
 		input.UserID,
 		amount,
 		category,
@@ -83,7 +82,7 @@ func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpe
 		return dto.UpdateExpenseOutput{}, err
 	}
 
-	if input.EnforceUserID && existing.UserID != input.UserID {
+	if input.EnforceUserID && existing.UserID() != input.UserID {
 		return dto.UpdateExpenseOutput{}, apperrs.ErrForbiddenAccess
 	}
 
@@ -122,7 +121,7 @@ func (u *ExpenseUseCase) DeleteExpense(ctx context.Context, input dto.DeleteExpe
 		if err != nil {
 			return dto.DeleteExpenseOutput{}, err
 		}
-		if existing.UserID != input.UserID {
+		if existing.UserID() != input.UserID {
 			return dto.DeleteExpenseOutput{}, apperrs.ErrForbiddenAccess
 		}
 	}
