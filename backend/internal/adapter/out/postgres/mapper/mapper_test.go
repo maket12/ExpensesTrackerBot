@@ -1,103 +1,157 @@
 package mapper
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"backend/internal/adapter/out/postgres/sqlc"
 	"backend/internal/domain/models"
 	"backend/internal/domain/port"
-	"backend/pkg/utils"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+var categories = []string{"еда", "транспорт", "жильё", "развлечения", "здоровье", "покупки", "другое"}
+
+func randomCategory() string {
+	return gofakeit.RandomString(categories)
+}
+
+func createFakeDomainExpense(t *testing.T) *models.Expense {
+	t.Helper()
+	userID := int64(gofakeit.Number(1, 100000))
+	amount := math.Round(gofakeit.Float64Range(1.0, 10000.0)*100) / 100
+	category := randomCategory()
+	spentAt := time.Now().UTC().Add(-time.Duration(gofakeit.Number(1, 100)) * time.Hour).Truncate(time.Microsecond)
+	comment := gofakeit.Sentence(3)
+
+	e, err := models.NewExpense(userID, amount, category, spentAt, comment)
+	require.NoError(t, err)
+	return e
+}
+
 func TestMapperUUID(t *testing.T) {
-	id := uuid.New()
+	id := uuid.MustParse(gofakeit.UUID())
 	pgUUID := ToPgUUID(id)
-	if !pgUUID.Valid {
-		t.Fatalf("expected pgUUID to be valid")
-	}
+	assert.True(t, pgUUID.Valid)
 
 	converted := FromPgUUID(pgUUID)
-	if converted != id {
-		t.Fatalf("expected %v, got %v", id, converted)
-	}
+	assert.Equal(t, id, converted)
 }
 
 func TestMapperNumeric(t *testing.T) {
-	val := 250.75
+	val := math.Round(gofakeit.Float64Range(1.0, 50000.0)*100) / 100
 	pgNum := ToPgNumeric(val)
-	if !pgNum.Valid {
-		t.Fatalf("expected pgNum to be valid")
-	}
+	assert.True(t, pgNum.Valid)
 
 	got, err := FromPgNumeric(pgNum)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got != val {
-		t.Fatalf("expected %v, got %v", val, got)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, val, got)
 }
 
 func TestMapperTimestamptz(t *testing.T) {
-	now := time.Now().Truncate(time.Microsecond)
+	now := gofakeit.Date().UTC().Truncate(time.Microsecond)
 	pgTime := ToPgTimestamptz(now)
-	if !pgTime.Valid {
-		t.Fatalf("expected pgTime to be valid")
-	}
+	assert.True(t, pgTime.Valid)
 
 	got := FromPgTimestamptz(pgTime)
-	if !got.Equal(now) {
-		t.Fatalf("expected %v, got %v", now, got)
-	}
+	assert.True(t, got.Equal(now))
 
 	zeroTime := ToPgTimestamptz(time.Time{})
-	if zeroTime.Valid {
-		t.Fatalf("expected zero time to be invalid")
-	}
+	assert.False(t, zeroTime.Valid)
 }
 
-func TestMapperParamsAndDomain(t *testing.T) {
-	spentAt := time.Now().UTC().Add(-time.Hour)
-	expense, err := models.NewExpense(12345, 120.50, "еда", spentAt, "обед")
-	if err != nil {
-		t.Fatalf("unexpected error creating expense: %v", err)
-	}
+func TestToCreateExpenseParams(t *testing.T) {
+	expense := createFakeDomainExpense(t)
+	params := ToCreateExpenseParams(expense)
 
+	assert.Equal(t, expense.ID(), FromPgUUID(params.ID))
+	assert.Equal(t, expense.UserID(), params.UserID)
+	val, err := FromPgNumeric(params.Amount)
+	require.NoError(t, err)
+	assert.Equal(t, expense.Amount(), val)
+	assert.Equal(t, expense.Category().String(), params.Category)
+	assert.Equal(t, expense.Comment(), params.Comment)
+	assert.True(t, expense.SpentAt().Equal(FromPgTimestamptz(params.SpentAt)))
+}
+
+func TestToUpdateExpenseParams(t *testing.T) {
+	expense := createFakeDomainExpense(t)
+	params := ToUpdateExpenseParams(expense)
+
+	assert.Equal(t, expense.ID(), FromPgUUID(params.ID))
+	val, err := FromPgNumeric(params.Amount)
+	require.NoError(t, err)
+	assert.Equal(t, expense.Amount(), val)
+	assert.Equal(t, expense.Category().String(), params.Category)
+	assert.Equal(t, expense.Comment(), params.Comment)
+}
+
+func TestToListLatestExpensesParams(t *testing.T) {
+	userID := int64(gofakeit.Number(1, 10000))
+	limit := gofakeit.Number(1, 50)
+
+	params := ToListLatestExpensesParams(userID, limit)
+	assert.Equal(t, userID, params.UserID)
+	assert.Equal(t, int32(limit), params.Limit)
+
+	defaultParams := ToListLatestExpensesParams(userID, 0)
+	assert.Equal(t, int32(5), defaultParams.Limit)
+}
+
+func TestToListExpensesFilteredParams(t *testing.T) {
+	userID := int64(gofakeit.Number(1, 10000))
+	cat := models.Category(randomCategory())
+	from := gofakeit.Date().UTC().Add(-48 * time.Hour)
+	to := gofakeit.Date().UTC()
+	limit := gofakeit.Number(1, 100)
+	offset := gofakeit.Number(0, 50)
+
+	t.Run("populated filter", func(t *testing.T) {
+		filter := port.ExpenseFilter{
+			UserID:   &userID,
+			Category: &cat,
+			From:     &from,
+			To:       &to,
+			Limit:    limit,
+			Offset:   offset,
+		}
+
+		params := ToListExpensesFilteredParams(filter)
+		require.NotNil(t, params.UserID)
+		assert.Equal(t, userID, *params.UserID)
+		require.NotNil(t, params.Category)
+		assert.Equal(t, cat.String(), *params.Category)
+		assert.True(t, params.From.Valid)
+		assert.True(t, params.To.Valid)
+		assert.Equal(t, int32(limit), params.Limit)
+		assert.Equal(t, int32(offset), params.Offset)
+	})
+
+	t.Run("empty filter with defaults", func(t *testing.T) {
+		filter := port.ExpenseFilter{
+			Limit:  0,
+			Offset: -1,
+		}
+
+		params := ToListExpensesFilteredParams(filter)
+		assert.Nil(t, params.UserID)
+		assert.Nil(t, params.Category)
+		assert.False(t, params.From.Valid)
+		assert.False(t, params.To.Valid)
+		assert.Equal(t, int32(50), params.Limit)
+		assert.Equal(t, int32(0), params.Offset)
+	})
+}
+
+func TestToDomainExpense_And_ToDomainExpenses(t *testing.T) {
+	expense := createFakeDomainExpense(t)
 	createParams := ToCreateExpenseParams(expense)
-	if createParams.UserID != 12345 {
-		t.Errorf("expected UserID 12345, got %d", createParams.UserID)
-	}
-	if createParams.Category != "еда" {
-		t.Errorf("expected category 'еда', got %s", createParams.Category)
-	}
-
-	updateParams := ToUpdateExpenseParams(expense)
-	if updateParams.Category != "еда" {
-		t.Errorf("expected category 'еда', got %s", updateParams.Category)
-	}
-
-	filter := port.ExpenseFilter{
-		UserID:   utils.VPtr(int64(12345)),
-		Category: utils.VPtr(models.CategoryFood),
-		From:     utils.VPtr(spentAt.Add(-time.Hour)),
-		To:       utils.VPtr(spentAt.Add(time.Hour)),
-		Limit:    10,
-		Offset:   0,
-	}
-
-	listParams := ToListExpensesFilteredParams(filter)
-	if *listParams.UserID != 12345 {
-		t.Errorf("expected UserID 12345, got %d", *listParams.UserID)
-	}
-	if *listParams.Category != "еда" {
-		t.Errorf("expected category 'еда', got %s", *listParams.Category)
-	}
-	if !listParams.From.Valid || !listParams.To.Valid {
-		t.Errorf("expected From and To to be valid")
-	}
 
 	row := sqlc.Expense{
 		ID:        createParams.ID,
@@ -110,33 +164,37 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		UpdatedAt: createParams.UpdatedAt,
 	}
 
-	domainExpense, err := ToDomainExpense(row)
-	if err != nil {
-		t.Fatalf("unexpected error converting to domain: %v", err)
-	}
+	t.Run("single row valid mapping", func(t *testing.T) {
+		domainExpense, err := ToDomainExpense(row)
+		require.NoError(t, err)
+		assert.Equal(t, expense.ID(), domainExpense.ID())
+		assert.Equal(t, expense.UserID(), domainExpense.UserID())
+		assert.Equal(t, expense.Amount(), domainExpense.Amount())
+		assert.Equal(t, expense.Category(), domainExpense.Category())
+		assert.Equal(t, expense.Comment(), domainExpense.Comment())
+	})
 
-	if domainExpense.ID() != expense.ID() {
-		t.Errorf("expected ID %v, got %v", expense.ID(), domainExpense.ID())
-	}
-	if domainExpense.Amount() != 120.50 {
-		t.Errorf("expected amount 120.50, got %f", domainExpense.Amount())
-	}
-	if domainExpense.Category() != models.CategoryFood {
-		t.Errorf("expected category %v, got %v", models.CategoryFood, domainExpense.Category())
-	}
-	if domainExpense.Comment() != "обед" {
-		t.Errorf("expected comment 'обед', got %v", domainExpense.Comment())
-	}
-}
+	t.Run("multiple rows valid mapping", func(t *testing.T) {
+		rows := []sqlc.Expense{row, row}
+		list, err := ToDomainExpenses(rows)
+		require.NoError(t, err)
+		require.Len(t, list, 2)
+	})
 
-func TestToListLatestExpensesParams(t *testing.T) {
-	params := ToListLatestExpensesParams(123, 10)
-	if params.UserID != 123 || params.Limit != 10 {
-		t.Errorf("expected UserID 123, Limit 10, got %v", params)
-	}
+	t.Run("empty rows slice", func(t *testing.T) {
+		list, err := ToDomainExpenses([]sqlc.Expense{})
+		require.NoError(t, err)
+		assert.Empty(t, list)
+	})
 
-	defaultParams := ToListLatestExpensesParams(123, 0)
-	if defaultParams.Limit != 5 {
-		t.Errorf("expected default Limit 5, got %d", defaultParams.Limit)
-	}
+	t.Run("invalid numeric returns error", func(t *testing.T) {
+		invalidRow := row
+		invalidRow.Amount = pgtype.Numeric{Valid: false}
+
+		_, err := ToDomainExpense(invalidRow)
+		require.Error(t, err)
+
+		_, err = ToDomainExpenses([]sqlc.Expense{invalidRow})
+		require.Error(t, err)
+	})
 }
