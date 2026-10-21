@@ -43,8 +43,8 @@ func TestListExpensesUC_Execute_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, out)
 	assert.Len(t, out.Expenses, 2)
-	assert.Equal(t, e1.ID().String(), out.Expenses[0].ID)
-	assert.Equal(t, e2.ID().String(), out.Expenses[1].ID)
+	assert.Equal(t, e1.ID(), out.Expenses[0].ID)
+	assert.Equal(t, e2.ID(), out.Expenses[1].ID)
 }
 
 func TestListExpensesUC_Execute_InvalidCategory(t *testing.T) {

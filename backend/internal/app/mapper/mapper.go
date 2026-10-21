@@ -14,7 +14,7 @@ func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
 		return dto.ExpenseDTO{}
 	}
 	return dto.ExpenseDTO{
-		ID:        e.ID().String(),
+		ID:        e.ID(),
 		UserID:    e.UserID(),
 		Amount:    e.Amount(),
 		Category:  e.Category().String(),

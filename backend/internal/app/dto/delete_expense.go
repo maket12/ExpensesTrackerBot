@@ -1,7 +1,9 @@
 package dto
 
+import "github.com/google/uuid"
+
 type DeleteExpenseInput struct {
-	ID            string
+	ID            uuid.UUID
 	UserID        int64
 	EnforceUserID bool
 }

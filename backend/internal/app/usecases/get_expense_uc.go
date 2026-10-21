@@ -24,7 +24,7 @@ func NewGetExpenseUC(repo port.ExpenseRepository) *GetExpenseUC {
 }
 
 func (uc *GetExpenseUC) validate(in dto.GetExpenseInput) error {
-	if _, err := uuid.Parse(in.ID); err != nil {
+	if in.ID == uuid.Nil {
 		return ucerrs.Wrap(
 			ucerrs.ErrInvalidInput,
 			pkgerrs.NewValueInvalidError("id"),
@@ -38,8 +38,7 @@ func (uc *GetExpenseUC) Execute(ctx context.Context, in dto.GetExpenseInput) (*d
 		return nil, err
 	}
 
-	id, _ := uuid.Parse(in.ID)
-	expense, err := uc.repo.Get(ctx, id)
+	expense, err := uc.repo.Get(ctx, in.ID)
 	if err != nil {
 		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
 			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)

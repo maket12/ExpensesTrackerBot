@@ -1,9 +1,13 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type ExpenseDTO struct {
-	ID        string
+	ID        uuid.UUID
 	UserID    int64
 	Amount    float64
 	Category  string

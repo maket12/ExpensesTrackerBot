@@ -84,7 +84,14 @@ func (h *Handler) GetExpense(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 
-	out, err := h.getExpenseUC.Execute(ctx, appdto.GetExpenseInput{ID: id})
+	input, err := mapper.ToGetExpenseInput(id)
+	if err != nil {
+		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP get expense failed: invalid id", "id", id, "error", err, "code", httpErr.Code)
+		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
+	}
+
+	out, err := h.getExpenseUC.Execute(ctx, input)
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
 		slog.WarnContext(ctx, "HTTP get expense failed", "id", id, "error", err, "code", httpErr.Code)
@@ -115,7 +122,14 @@ func (h *Handler) UpdateExpense(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: pkgerrs.ErrInvalidJSON.Error()})
 	}
 
-	out, err := h.updateExpenseUC.Execute(ctx, mapper.ToUpdateExpenseInput(id, req))
+	input, err := mapper.ToUpdateExpenseInput(id, req)
+	if err != nil {
+		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP update expense failed: invalid id", "id", id, "error", err, "code", httpErr.Code)
+		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
+	}
+
+	out, err := h.updateExpenseUC.Execute(ctx, input)
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
 		slog.WarnContext(ctx, "HTTP update expense failed", "id", id, "error", err, "code", httpErr.Code)
@@ -138,10 +152,14 @@ func (h *Handler) DeleteExpense(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 
-	_, err := h.deleteExpenseUC.Execute(ctx, appdto.DeleteExpenseInput{
-		ID:            id,
-		EnforceUserID: false,
-	})
+	input, err := mapper.ToDeleteExpenseInput(id)
+	if err != nil {
+		httpErr := errs.FromDomainOrAppError(err)
+		slog.WarnContext(ctx, "HTTP delete expense failed: invalid id", "id", id, "error", err, "code", httpErr.Code)
+		return c.JSON(httpErr.Code, dto.ErrorResponse{Error: httpErr.Message})
+	}
+
+	_, err = h.deleteExpenseUC.Execute(ctx, input)
 	if err != nil {
 		httpErr := errs.FromDomainOrAppError(err)
 		slog.WarnContext(ctx, "HTTP delete expense failed", "id", id, "error", err, "code", httpErr.Code)

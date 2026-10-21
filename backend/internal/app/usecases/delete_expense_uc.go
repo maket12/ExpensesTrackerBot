@@ -24,7 +24,7 @@ func NewDeleteExpenseUC(repo port.ExpenseRepository) *DeleteExpenseUC {
 }
 
 func (uc *DeleteExpenseUC) validate(in dto.DeleteExpenseInput) error {
-	if _, err := uuid.Parse(in.ID); err != nil {
+	if in.ID == uuid.Nil {
 		return ucerrs.Wrap(
 			ucerrs.ErrInvalidInput,
 			pkgerrs.NewValueInvalidError("id"),
@@ -38,9 +38,8 @@ func (uc *DeleteExpenseUC) Execute(ctx context.Context, in dto.DeleteExpenseInpu
 		return nil, err
 	}
 
-	id, _ := uuid.Parse(in.ID)
 	if in.EnforceUserID {
-		existing, err := uc.repo.Get(ctx, id)
+		existing, err := uc.repo.Get(ctx, in.ID)
 		if err != nil {
 			if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
 				return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
@@ -52,7 +51,7 @@ func (uc *DeleteExpenseUC) Execute(ctx context.Context, in dto.DeleteExpenseInpu
 		}
 	}
 
-	if err := uc.repo.Delete(ctx, id); err != nil {
+	if err := uc.repo.Delete(ctx, in.ID); err != nil {
 		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
 			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
 		}

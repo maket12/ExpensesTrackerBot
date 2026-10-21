@@ -29,7 +29,7 @@ func TestDeleteExpenseUC_Execute_Success_WithoutEnforceUserID(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            id.String(),
+		ID:            id,
 		EnforceUserID: false,
 	})
 
@@ -56,7 +56,7 @@ func TestDeleteExpenseUC_Execute_Success_WithEnforceUserID(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            e.ID().String(),
+		ID:            e.ID(),
 		UserID:        100,
 		EnforceUserID: true,
 	})
@@ -70,7 +70,7 @@ func TestDeleteExpenseUC_Execute_InvalidID(t *testing.T) {
 	repo := mocks.NewMockExpenseRepository(t)
 	uc := NewDeleteExpenseUC(repo)
 
-	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{ID: "invalid-uuid"})
+	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{ID: uuid.Nil})
 	assert.Nil(t, out)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, apperrs.ErrInvalidInput))
@@ -87,7 +87,7 @@ func TestDeleteExpenseUC_Execute_EnforceUserID_GetNotFound(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            id.String(),
+		ID:            id,
 		UserID:        100,
 		EnforceUserID: true,
 	})
@@ -108,7 +108,7 @@ func TestDeleteExpenseUC_Execute_EnforceUserID_GetRepoError(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            id.String(),
+		ID:            id,
 		UserID:        100,
 		EnforceUserID: true,
 	})
@@ -131,7 +131,7 @@ func TestDeleteExpenseUC_Execute_EnforceUserID_Forbidden(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            e.ID().String(),
+		ID:            e.ID(),
 		UserID:        200,
 		EnforceUserID: true,
 	})
@@ -152,7 +152,7 @@ func TestDeleteExpenseUC_Execute_DeleteNotFound(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            id.String(),
+		ID:            id,
 		EnforceUserID: false,
 	})
 
@@ -172,7 +172,7 @@ func TestDeleteExpenseUC_Execute_DeleteRepoError(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.DeleteExpenseInput{
-		ID:            id.String(),
+		ID:            id,
 		EnforceUserID: false,
 	})
 

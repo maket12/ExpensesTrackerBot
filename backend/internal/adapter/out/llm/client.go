@@ -14,6 +14,7 @@ import (
 	"backend/internal/domain/port"
 	pkgerrs "backend/pkg/errs"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -198,8 +199,13 @@ func (c *Client) executeTool(ctx context.Context, userID int64, tc openai.ToolCa
 			spentAt = &t
 		}
 
+		expenseID, err := uuid.Parse(args.ID)
+		if err != nil {
+			return fmt.Sprintf(`{"error":"некорректный формат id: %s"}`, err.Error())
+		}
+
 		out, err := c.updateUC.Execute(ctx, appdto.UpdateExpenseInput{
-			ID:            args.ID,
+			ID:            expenseID,
 			UserID:        userID,
 			Amount:        args.Amount,
 			Category:      args.Category,
@@ -219,8 +225,13 @@ func (c *Client) executeTool(ctx context.Context, userID int64, tc openai.ToolCa
 			return fmt.Sprintf(`{"error":"некорректные параметры: %s"}`, err.Error())
 		}
 
+		expenseID, err := uuid.Parse(args.ID)
+		if err != nil {
+			return fmt.Sprintf(`{"error":"некорректный формат id: %s"}`, err.Error())
+		}
+
 		out, err := c.deleteUC.Execute(ctx, appdto.DeleteExpenseInput{
-			ID:            args.ID,
+			ID:            expenseID,
 			UserID:        userID,
 			EnforceUserID: true,
 		})

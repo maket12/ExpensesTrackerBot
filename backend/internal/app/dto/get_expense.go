@@ -1,7 +1,9 @@
 package dto
 
+import "github.com/google/uuid"
+
 type GetExpenseInput struct {
-	ID string
+	ID uuid.UUID
 }
 
 type GetExpenseOutput struct {

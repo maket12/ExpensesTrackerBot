@@ -11,6 +11,7 @@ import (
 	"backend/internal/domain/models"
 	"backend/internal/domain/port/mocks"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestCreateExpenseUC_Execute_Success(t *testing.T) {
 	out, err := uc.Execute(context.Background(), input)
 	require.NoError(t, err)
 	require.NotNil(t, out)
-	assert.NotEmpty(t, out.Expense.ID)
+	assert.NotEqual(t, uuid.Nil, out.Expense.ID)
 	assert.Equal(t, int64(100), out.Expense.UserID)
 	assert.Equal(t, 250.50, out.Expense.Amount)
 	assert.Equal(t, "еда", out.Expense.Category)

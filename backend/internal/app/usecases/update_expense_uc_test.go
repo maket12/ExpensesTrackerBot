@@ -48,7 +48,7 @@ func TestUpdateExpenseUC_Execute_Success(t *testing.T) {
 		Once()
 
 	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{
-		ID:            e.ID().String(),
+		ID:            e.ID(),
 		UserID:        100,
 		Amount:        &newAmount,
 		Category:      &newCat,
@@ -68,7 +68,7 @@ func TestUpdateExpenseUC_Execute_InvalidID(t *testing.T) {
 	repo := mocks.NewMockExpenseRepository(t)
 	uc := NewUpdateExpenseUC(repo)
 
-	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: "invalid-uuid"})
+	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: uuid.Nil})
 	assert.Nil(t, out)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, apperrs.ErrInvalidInput))
@@ -84,7 +84,7 @@ func TestUpdateExpenseUC_Execute_GetNotFound(t *testing.T) {
 		Return(nil, pkgerrs.NewObjectNotFoundError("expense", id)).
 		Once()
 
-	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: id.String()})
+	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: id})
 	assert.Nil(t, out)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, apperrs.ErrExpenseNotFound))
@@ -100,7 +100,7 @@ func TestUpdateExpenseUC_Execute_GetRepoError(t *testing.T) {
 		Return(nil, errors.New("read failure")).
 		Once()
 
-	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: id.String()})
+	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{ID: id})
 	assert.Nil(t, out)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, apperrs.ErrGetExpenseDB))
@@ -120,7 +120,7 @@ func TestUpdateExpenseUC_Execute_EnforceUserID_Forbidden(t *testing.T) {
 
 	newAmount := 500.0
 	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{
-		ID:            e.ID().String(),
+		ID:            e.ID(),
 		UserID:        200,
 		Amount:        &newAmount,
 		EnforceUserID: true,
@@ -177,7 +177,7 @@ func TestUpdateExpenseUC_Execute_DomainValidationError(t *testing.T) {
 				Once()
 
 			in := tt.modifyInput()
-			in.ID = e.ID().String()
+			in.ID = e.ID()
 
 			out, err := uc.Execute(context.Background(), in)
 			assert.Nil(t, out)
@@ -206,7 +206,7 @@ func TestUpdateExpenseUC_Execute_UpdateNotFound(t *testing.T) {
 
 	newAmount := 500.0
 	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{
-		ID:     e.ID().String(),
+		ID:     e.ID(),
 		Amount: &newAmount,
 	})
 
@@ -234,7 +234,7 @@ func TestUpdateExpenseUC_Execute_UpdateRepoError(t *testing.T) {
 
 	newAmount := 500.0
 	out, err := uc.Execute(context.Background(), dto.UpdateExpenseInput{
-		ID:     e.ID().String(),
+		ID:     e.ID(),
 		Amount: &newAmount,
 	})
 
