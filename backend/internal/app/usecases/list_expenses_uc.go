@@ -14,9 +14,7 @@ type ListExpensesUC struct {
 }
 
 func NewListExpensesUC(repo port.ExpenseRepository) *ListExpensesUC {
-	return &ListExpensesUC{
-		repo: repo,
-	}
+	return &ListExpensesUC{repo: repo}
 }
 
 func (uc *ListExpensesUC) Execute(ctx context.Context, in dto.ListExpensesInput) (*dto.ListExpensesOutput, error) {

@@ -25,8 +25,7 @@ var (
 	ErrListUserIDSDB        = errors.New("failed to get a list of user ids using db")
 	ErrExpenseNotFound      = errors.New("expense not found")
 
-	ErrAdMessageStore         = errors.New("failed to append message using store")
-	ErrAddMessageStore        = ErrAdMessageStore
+	ErrAddMessageStore        = errors.New("failed to append message using store")
 	ErrGetRecentMessagesStore = errors.New("failed to get recent message using store")
 	ErrClearMessagesStore     = errors.New("failed to clear messages using store")
 

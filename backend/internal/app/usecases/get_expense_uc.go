@@ -18,21 +18,22 @@ type GetExpenseUC struct {
 }
 
 func NewGetExpenseUC(repo port.ExpenseRepository) *GetExpenseUC {
-	return &GetExpenseUC{
-		repo: repo,
-	}
+	return &GetExpenseUC{repo: repo}
 }
 
 func (uc *GetExpenseUC) Execute(ctx context.Context, in dto.GetExpenseInput) (*dto.GetExpenseOutput, error) {
 	id, err := uuid.Parse(in.ID)
 	if err != nil {
-		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
+		return nil, ucerrs.Wrap(
+			ucerrs.ErrInvalidInput,
+			pkgerrs.NewValueInvalidError("id"),
+		)
 	}
 
 	expense, err := uc.repo.Get(ctx, id)
 	if err != nil {
-		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+			return nil, ucerrs.ErrExpenseNotFound
 		}
 		return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 	}

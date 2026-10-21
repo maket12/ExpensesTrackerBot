@@ -32,11 +32,11 @@ func (uc *HandleAgentMessageUC) Execute(ctx context.Context, in dto.HandleAgentM
 		return nil, ucerrs.Wrap(ucerrs.ErrGenerateReplyLLM, err)
 	}
 
-	if err := uc.memory.AddMessage(ctx, in.UserID, "user", in.Text); err != nil {
-		return nil, ucerrs.Wrap(ucerrs.ErrAdMessageStore, err)
+	if err = uc.memory.AddMessage(ctx, in.UserID, "user", in.Text); err != nil {
+		return nil, ucerrs.Wrap(ucerrs.ErrAddMessageStore, err)
 	}
-	if err := uc.memory.AddMessage(ctx, in.UserID, "assistant", reply); err != nil {
-		return nil, ucerrs.Wrap(ucerrs.ErrAdMessageStore, err)
+	if err = uc.memory.AddMessage(ctx, in.UserID, "assistant", reply); err != nil {
+		return nil, ucerrs.Wrap(ucerrs.ErrAddMessageStore, err)
 	}
 
 	return mapper.ToHandleAgentMessageOutput(reply), nil
