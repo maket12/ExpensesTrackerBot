@@ -1,0 +1,13 @@
+# .mockery.yml
+with-expecter: true
+recursive: true
+all: true
+
+dir: "internal/domain/port/mocks"
+outpkg: "mocks"
+
+
+packages:
+  backend/internal/domain/port:
+    config:
+      all: true
