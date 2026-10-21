@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	ucerrs "backend/internal/app/errs"
 	"context"
 
 	"backend/internal/app/dto"
@@ -19,21 +20,21 @@ func NewCreateExpenseUC(repo port.ExpenseRepository) *CreateExpenseUC {
 	}
 }
 
-func (uc *CreateExpenseUC) Execute(ctx context.Context, input dto.CreateExpenseInput) (dto.CreateExpenseOutput, error) {
+func (uc *CreateExpenseUC) Execute(ctx context.Context, in dto.CreateExpenseInput) (*dto.CreateExpenseOutput, error) {
 	expense, err := models.NewExpense(
-		input.UserID,
-		input.Amount,
-		input.Category,
-		input.SpentAt,
-		input.Comment,
+		in.UserID,
+		in.Amount,
+		in.Category,
+		in.SpentAt,
+		in.Comment,
 	)
 	if err != nil {
-		return dto.CreateExpenseOutput{}, err
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
 	created, err := uc.repo.Create(ctx, expense)
 	if err != nil {
-		return dto.CreateExpenseOutput{}, err
+		return nil, ucerrs.Wrap(ucerrs.ErrCreateExpenseDB, err)
 	}
 
 	return mapper.ToCreateExpenseOutput(created), nil

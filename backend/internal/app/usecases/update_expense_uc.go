@@ -2,9 +2,10 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"backend/internal/app/dto"
-	apperrs "backend/internal/app/errs"
+	ucerrs "backend/internal/app/errs"
 	"backend/internal/app/mapper"
 	"backend/internal/domain/port"
 	pkgerrs "backend/pkg/errs"
@@ -22,28 +23,34 @@ func NewUpdateExpenseUC(repo port.ExpenseRepository) *UpdateExpenseUC {
 	}
 }
 
-func (uc *UpdateExpenseUC) Execute(ctx context.Context, input dto.UpdateExpenseInput) (dto.UpdateExpenseOutput, error) {
-	id, err := uuid.Parse(input.ID)
+func (uc *UpdateExpenseUC) Execute(ctx context.Context, in dto.UpdateExpenseInput) (*dto.UpdateExpenseOutput, error) {
+	id, err := uuid.Parse(in.ID)
 	if err != nil {
-		return dto.UpdateExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
 	existing, err := uc.repo.Get(ctx, id)
 	if err != nil {
-		return dto.UpdateExpenseOutput{}, err
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
+			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		}
+		return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 	}
 
-	if input.EnforceUserID && existing.UserID() != input.UserID {
-		return dto.UpdateExpenseOutput{}, apperrs.ErrForbiddenAccess
+	if in.EnforceUserID && existing.UserID() != in.UserID {
+		return nil, ucerrs.Wrap(ucerrs.ErrForbiddenAccess, errors.New("user mismatch"))
 	}
 
-	if err := existing.Update(input.Amount, input.Category, input.SpentAt, input.Comment); err != nil {
-		return dto.UpdateExpenseOutput{}, err
+	if err := existing.Update(in.Amount, in.Category, in.SpentAt, in.Comment); err != nil {
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
 	updated, err := uc.repo.Update(ctx, existing)
 	if err != nil {
-		return dto.UpdateExpenseOutput{}, err
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
+			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		}
+		return nil, ucerrs.Wrap(ucerrs.ErrUpdateExpenseDB, err)
 	}
 
 	return mapper.ToUpdateExpenseOutput(updated), nil

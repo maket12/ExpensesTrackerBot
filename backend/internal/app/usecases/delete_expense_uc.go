@@ -2,9 +2,10 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"backend/internal/app/dto"
-	apperrs "backend/internal/app/errs"
+	ucerrs "backend/internal/app/errs"
 	"backend/internal/app/mapper"
 	"backend/internal/domain/port"
 	pkgerrs "backend/pkg/errs"
@@ -22,24 +23,30 @@ func NewDeleteExpenseUC(repo port.ExpenseRepository) *DeleteExpenseUC {
 	}
 }
 
-func (uc *DeleteExpenseUC) Execute(ctx context.Context, input dto.DeleteExpenseInput) (dto.DeleteExpenseOutput, error) {
-	id, err := uuid.Parse(input.ID)
+func (uc *DeleteExpenseUC) Execute(ctx context.Context, in dto.DeleteExpenseInput) (*dto.DeleteExpenseOutput, error) {
+	id, err := uuid.Parse(in.ID)
 	if err != nil {
-		return dto.DeleteExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
-	if input.EnforceUserID {
+	if in.EnforceUserID {
 		existing, err := uc.repo.Get(ctx, id)
 		if err != nil {
-			return dto.DeleteExpenseOutput{}, err
+			if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
+				return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+			}
+			return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 		}
-		if existing.UserID() != input.UserID {
-			return dto.DeleteExpenseOutput{}, apperrs.ErrForbiddenAccess
+		if existing.UserID() != in.UserID {
+			return nil, ucerrs.Wrap(ucerrs.ErrForbiddenAccess, errors.New("user mismatch"))
 		}
 	}
 
 	if err := uc.repo.Delete(ctx, id); err != nil {
-		return dto.DeleteExpenseOutput{}, err
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
+			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		}
+		return nil, ucerrs.Wrap(ucerrs.ErrDeleteExpenseDB, err)
 	}
 
 	return mapper.ToDeleteExpenseOutput(), nil

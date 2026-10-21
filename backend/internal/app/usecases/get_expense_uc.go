@@ -2,9 +2,10 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"backend/internal/app/dto"
-	apperrs "backend/internal/app/errs"
+	ucerrs "backend/internal/app/errs"
 	"backend/internal/app/mapper"
 	"backend/internal/domain/port"
 	pkgerrs "backend/pkg/errs"
@@ -22,15 +23,18 @@ func NewGetExpenseUC(repo port.ExpenseRepository) *GetExpenseUC {
 	}
 }
 
-func (uc *GetExpenseUC) Execute(ctx context.Context, input dto.GetExpenseInput) (dto.GetExpenseOutput, error) {
-	id, err := uuid.Parse(input.ID)
+func (uc *GetExpenseUC) Execute(ctx context.Context, in dto.GetExpenseInput) (*dto.GetExpenseOutput, error) {
+	id, err := uuid.Parse(in.ID)
 	if err != nil {
-		return dto.GetExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
 	expense, err := uc.repo.Get(ctx, id)
 	if err != nil {
-		return dto.GetExpenseOutput{}, err
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
+			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		}
+		return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 	}
 
 	return mapper.ToGetExpenseOutput(expense), nil

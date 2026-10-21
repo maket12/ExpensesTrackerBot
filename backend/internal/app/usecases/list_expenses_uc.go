@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"backend/internal/app/dto"
+	ucerrs "backend/internal/app/errs"
 	"backend/internal/app/mapper"
 	"backend/internal/domain/port"
 )
@@ -18,15 +19,15 @@ func NewListExpensesUC(repo port.ExpenseRepository) *ListExpensesUC {
 	}
 }
 
-func (uc *ListExpensesUC) Execute(ctx context.Context, input dto.ListExpensesInput) (dto.ListExpensesOutput, error) {
-	filter, err := mapper.ToDomainFilter(input)
+func (uc *ListExpensesUC) Execute(ctx context.Context, in dto.ListExpensesInput) (*dto.ListExpensesOutput, error) {
+	filter, err := mapper.ToDomainFilter(in)
 	if err != nil {
-		return dto.ListExpensesOutput{}, err
+		return nil, ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
 	}
 
 	expenses, err := uc.repo.List(ctx, filter)
 	if err != nil {
-		return dto.ListExpensesOutput{}, err
+		return nil, ucerrs.Wrap(ucerrs.ErrListExpensesDB, err)
 	}
 
 	return mapper.ToListExpensesOutput(expenses), nil

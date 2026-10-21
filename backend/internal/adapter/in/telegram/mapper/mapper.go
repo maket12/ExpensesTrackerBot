@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	appdto "backend/internal/app/dto"
 	tgdto "backend/internal/adapter/in/telegram/dto"
+	appdto "backend/internal/app/dto"
 )
 
 func ToAgentInput(req tgdto.ProcessMessageRequest) appdto.HandleAgentMessageInput {
@@ -12,7 +12,10 @@ func ToAgentInput(req tgdto.ProcessMessageRequest) appdto.HandleAgentMessageInpu
 	}
 }
 
-func ToTelegramResponse(out appdto.HandleAgentMessageOutput) tgdto.ProcessMessageResponse {
+func ToTelegramResponse(out *appdto.HandleAgentMessageOutput) tgdto.ProcessMessageResponse {
+	if out == nil {
+		return tgdto.ProcessMessageResponse{}
+	}
 	return tgdto.ProcessMessageResponse{
 		Text: out.ResponseText,
 	}

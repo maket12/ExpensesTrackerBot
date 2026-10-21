@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"backend/internal/app/dto"
+	ucerrs "backend/internal/app/errs"
 	"backend/internal/app/mapper"
 	"backend/internal/domain/port"
 )
@@ -18,10 +19,10 @@ func NewGetDistinctUsersUC(repo port.ExpenseRepository) *GetDistinctUsersUC {
 	}
 }
 
-func (uc *GetDistinctUsersUC) Execute(ctx context.Context, _ dto.GetDistinctUsersInput) (dto.GetDistinctUsersOutput, error) {
+func (uc *GetDistinctUsersUC) Execute(ctx context.Context, _ dto.GetDistinctUsersInput) (*dto.GetDistinctUsersOutput, error) {
 	userIDs, err := uc.repo.ListUserIDS(ctx)
 	if err != nil {
-		return dto.GetDistinctUsersOutput{}, err
+		return nil, ucerrs.Wrap(ucerrs.ErrListUserIDSDB, err)
 	}
 
 	return mapper.ToGetDistinctUsersOutput(userIDs), nil
