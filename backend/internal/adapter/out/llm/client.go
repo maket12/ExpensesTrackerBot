@@ -14,6 +14,7 @@ import (
 type Client struct {
 	client *openai.Client
 	model  string
+	tools  []openai.Tool
 }
 
 func NewClient(baseURL, apiKey, model string) (*Client, error) {
@@ -32,19 +33,17 @@ func NewClient(baseURL, apiKey, model string) (*Client, error) {
 	return &Client{
 		client: openai.NewClientWithConfig(cfg),
 		model:  model,
+		tools:  mapper.DefaultOpenAITools(),
 	}, nil
 }
 
-func (c *Client) GenerateResponse(ctx context.Context, messages []port.AgentMessage, tools []port.AgentTool) (port.AgentResponse, error) {
+func (c *Client) GenerateResponse(ctx context.Context, messages []port.AgentMessage) (port.AgentResponse, error) {
 	req := openai.ChatCompletionRequest{
 		Model:       c.model,
 		Messages:    mapper.ToOpenAIMessages(messages),
 		Temperature: 0.1,
-	}
-
-	if len(tools) > 0 {
-		req.Tools = mapper.ToOpenAITools(tools)
-		req.ToolChoice = "auto"
+		Tools:       c.tools,
+		ToolChoice:  "auto",
 	}
 
 	resp, err := c.client.CreateChatCompletion(ctx, req)

@@ -56,115 +56,6 @@ type deleteExpenseArgs struct {
 	ID string `json:"id"`
 }
 
-func (a *AgentUseCase) getTools() []port.AgentTool {
-	return []port.AgentTool{
-		{
-			Name:        "add_expense",
-			Description: "Сохранить новую трату пользователя",
-			Parameters: port.ToolParameters{
-				Type: "object",
-				Properties: map[string]port.ToolParameterProperty{
-					"amount": {
-						Type:        "number",
-						Description: "Сумма траты больше 0",
-					},
-					"category": {
-						Type:        "string",
-						Description: "Категория траты строго из списка",
-						Enum: []string{
-							"еда", "транспорт", "жильё", "развлечения", "здоровье", "покупки", "другое",
-						},
-					},
-					"spent_at": {
-						Type:        "string",
-						Description: "Дата и время траты в формате ISO 8601 (RFC3339)",
-					},
-					"comment": {
-						Type:        "string",
-						Description: "Необязательный комментарий или описание (например: кофе, такси)",
-					},
-				},
-				Required: []string{"amount", "category", "spent_at"},
-			},
-		},
-		{
-			Name:        "list_expenses",
-			Description: "Получить список последних трат пользователя или посчитать сумму за период",
-			Parameters: port.ToolParameters{
-				Type: "object",
-				Properties: map[string]port.ToolParameterProperty{
-					"limit": {
-						Type:        "integer",
-						Description: "Максимальное число записей (по умолчанию 10)",
-					},
-					"category": {
-						Type:        "string",
-						Description: "Фильтр по категории",
-						Enum: []string{
-							"еда", "транспорт", "жильё", "развлечения", "здоровье", "покупки", "другое",
-						},
-					},
-					"from": {
-						Type:        "string",
-						Description: "Начало периода в формате RFC3339",
-					},
-					"to": {
-						Type:        "string",
-						Description: "Конец периода в формате RFC3339",
-					},
-				},
-			},
-		},
-		{
-			Name:        "update_expense",
-			Description: "Изменить существующую запись траты пользователя по её ID",
-			Parameters: port.ToolParameters{
-				Type: "object",
-				Properties: map[string]port.ToolParameterProperty{
-					"id": {
-						Type:        "string",
-						Description: "UUID идентификатор траты",
-					},
-					"amount": {
-						Type:        "number",
-						Description: "Новая сумма",
-					},
-					"category": {
-						Type:        "string",
-						Description: "Новая категория",
-						Enum: []string{
-							"еда", "транспорт", "жильё", "развлечения", "здоровье", "покупки", "другое",
-						},
-					},
-					"spent_at": {
-						Type:        "string",
-						Description: "Новая дата и время в формате RFC3339",
-					},
-					"comment": {
-						Type:        "string",
-						Description: "Новый комментарий",
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-		{
-			Name:        "delete_expense",
-			Description: "Удалить трату пользователя по её ID",
-			Parameters: port.ToolParameters{
-				Type: "object",
-				Properties: map[string]port.ToolParameterProperty{
-					"id": {
-						Type:        "string",
-						Description: "UUID идентификатор удаляемой траты",
-					},
-				},
-				Required: []string{"id"},
-			},
-		},
-	}
-}
-
 func (a *AgentUseCase) buildSystemPrompt(now time.Time) string {
 	weekdays := map[time.Weekday]string{
 		time.Monday:    "Понедельник",
@@ -227,11 +118,9 @@ func (a *AgentUseCase) HandleMessage(ctx context.Context, input dto.HandleAgentM
 		Content: input.Text,
 	})
 
-	tools := a.getTools()
-
 	maxIterations := 5
 	for i := 0; i < maxIterations; i++ {
-		resp, err := a.llmClient.GenerateResponse(ctx, messages, tools)
+		resp, err := a.llmClient.GenerateResponse(ctx, messages)
 		if err != nil {
 			return dto.HandleAgentMessageOutput{}, fmt.Errorf("%w: %v", apperrs.ErrAgentFailed, err)
 		}

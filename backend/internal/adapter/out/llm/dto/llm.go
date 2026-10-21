@@ -19,6 +19,18 @@ type AgentToolDTO struct {
 	Parameters  any
 }
 
+type ToolParameterProperty struct {
+	Type        string   `json:"type"`
+	Description string   `json:"description,omitempty"`
+	Enum        []string `json:"enum,omitempty"`
+}
+
+type ToolParameters struct {
+	Type       string                            `json:"type"`
+	Properties map[string]ToolParameterProperty `json:"properties"`
+	Required   []string                          `json:"required,omitempty"`
+}
+
 type GenerateCompletionRequest struct {
 	Model    string
 	Messages []AgentMessageDTO
