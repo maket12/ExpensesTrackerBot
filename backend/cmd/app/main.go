@@ -49,28 +49,42 @@ func main() {
 	slog.Info("connected to postgresql successfully")
 
 	repo := postgresadapter.NewExpensesRepository(pgClient)
-	expenseUseCase := usecases.NewExpenseUseCase(repo)
+	createExpenseUC := usecases.NewCreateExpenseUC(repo)
+	getExpenseUC := usecases.NewGetExpenseUC(repo)
+	updateExpenseUC := usecases.NewUpdateExpenseUC(repo)
+	deleteExpenseUC := usecases.NewDeleteExpenseUC(repo)
+	listExpensesUC := usecases.NewListExpensesUC(repo)
+	getDistinctUsersUC := usecases.NewGetDistinctUsersUC(repo)
+
 	memoryStore := memory.NewStore()
 
-	var agentUseCase *usecases.AgentUseCase
+	var handleMessageUC *usecases.HandleAgentMessageUC
 	if cfg.LLMAPIKey != "" {
 		llmClient, err := llm.NewClient(cfg.LLMBaseURL, cfg.LLMAPIKey, cfg.LLMModel)
 		if err != nil {
 			slog.Warn("failed to initialize llm client", "error", err)
 		} else {
-			agentUseCase = usecases.NewAgentUseCase(expenseUseCase, llmClient, memoryStore)
+			toolExecutor := usecases.NewAgentToolExecutor(createExpenseUC, listExpensesUC, updateExpenseUC, deleteExpenseUC)
+			handleMessageUC = usecases.NewHandleAgentMessageUC(llmClient, memoryStore, toolExecutor)
 			slog.Info("LLM client initialized", "model", cfg.LLMModel, "base_url", cfg.LLMBaseURL)
 		}
 	} else {
 		slog.Warn("LLM_API_KEY is not set, AI features will be disabled")
 	}
 
-	httpHandler := httpadapter.NewHandler(expenseUseCase)
+	httpHandler := httpadapter.NewHandler(
+		createExpenseUC,
+		getExpenseUC,
+		updateExpenseUC,
+		deleteExpenseUC,
+		listExpensesUC,
+		getDistinctUsersUC,
+	)
 	echoRouter := httpadapter.NewRouter(httpHandler)
 
 	var tgBot *tgadapter.Bot
-	if cfg.TelegramBotToken != "" && agentUseCase != nil {
-		bot, err := tgadapter.NewBot(cfg.TelegramBotToken, agentUseCase)
+	if cfg.TelegramBotToken != "" && handleMessageUC != nil {
+		bot, err := tgadapter.NewBot(cfg.TelegramBotToken, handleMessageUC)
 		if err != nil {
 			slog.Warn("failed to initialize telegram bot", "error", err)
 		} else {

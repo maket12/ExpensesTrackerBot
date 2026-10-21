@@ -15,11 +15,11 @@ import (
 )
 
 type Bot struct {
-	bot   *telebot.Bot
-	agent *usecases.AgentUseCase
+	bot             *telebot.Bot
+	handleMessageUC *usecases.HandleAgentMessageUC
 }
 
-func NewBot(token string, agent *usecases.AgentUseCase) (*Bot, error) {
+func NewBot(token string, handleMessageUC *usecases.HandleAgentMessageUC) (*Bot, error) {
 	if strings.TrimSpace(token) == "" {
 		return nil, errs.ErrEmptyToken
 	}
@@ -35,8 +35,8 @@ func NewBot(token string, agent *usecases.AgentUseCase) (*Bot, error) {
 	}
 
 	tb := &Bot{
-		bot:   b,
-		agent: agent,
+		bot:             b,
+		handleMessageUC: handleMessageUC,
 	}
 
 	tb.setupHandlers()
@@ -76,7 +76,7 @@ func (b *Bot) setupHandlers() {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 
-		out, err := b.agent.HandleMessage(ctx, mapper.ToAgentInput(req))
+		out, err := b.handleMessageUC.Execute(ctx, mapper.ToAgentInput(req))
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to handle telegram message", "user_id", req.UserID, "error", err, "duration", time.Since(start))
 			return c.Send("Не удалось обработать запрос. Пожалуйста, попробуйте сформулировать иначе.")

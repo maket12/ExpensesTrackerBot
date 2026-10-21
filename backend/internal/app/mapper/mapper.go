@@ -33,6 +33,48 @@ func ToExpenseDTOList(expenses []*models.Expense) []dto.ExpenseDTO {
 	return result
 }
 
+func ToCreateExpenseOutput(expense *models.Expense) dto.CreateExpenseOutput {
+	return dto.CreateExpenseOutput{
+		Expense: ToExpenseDTO(expense),
+	}
+}
+
+func ToGetExpenseOutput(expense *models.Expense) dto.GetExpenseOutput {
+	return dto.GetExpenseOutput{
+		Expense: ToExpenseDTO(expense),
+	}
+}
+
+func ToUpdateExpenseOutput(expense *models.Expense) dto.UpdateExpenseOutput {
+	return dto.UpdateExpenseOutput{
+		Expense: ToExpenseDTO(expense),
+	}
+}
+
+func ToDeleteExpenseOutput() dto.DeleteExpenseOutput {
+	return dto.DeleteExpenseOutput{
+		Success: true,
+	}
+}
+
+func ToListExpensesOutput(expenses []*models.Expense) dto.ListExpensesOutput {
+	return dto.ListExpensesOutput{
+		Expenses: ToExpenseDTOList(expenses),
+	}
+}
+
+func ToGetDistinctUsersOutput(userIDs []int64) dto.GetDistinctUsersOutput {
+	return dto.GetDistinctUsersOutput{
+		UserIDs: userIDs,
+	}
+}
+
+func ToHandleAgentMessageOutput(reply string) dto.HandleAgentMessageOutput {
+	return dto.HandleAgentMessageOutput{
+		ResponseText: reply,
+	}
+}
+
 func ToDomainFilter(input dto.ListExpensesInput) (port.ExpenseFilter, error) {
 	var cat *models.Category
 	if input.Category != nil && *input.Category != "" && *input.Category != "все" {

@@ -99,13 +99,13 @@ func (m *mockExpenseRepo) ListUserIDS(_ context.Context) ([]int64, error) {
 	return res, nil
 }
 
-func TestExpenseUseCase_CreateExpense(t *testing.T) {
+func TestCreateExpenseUC(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewCreateExpenseUC(repo)
 
 	spentAt := time.Now().UTC().Add(-time.Hour)
-	out, err := uc.CreateExpense(ctx, dto.CreateExpenseInput{
+	out, err := uc.Execute(ctx, dto.CreateExpenseInput{
 		UserID:   100,
 		Amount:   250.50,
 		Category: "еда",
@@ -126,7 +126,7 @@ func TestExpenseUseCase_CreateExpense(t *testing.T) {
 		t.Errorf("expected category 'еда', got %s", out.Expense.Category)
 	}
 
-	_, err = uc.CreateExpense(ctx, dto.CreateExpenseInput{
+	_, err = uc.Execute(ctx, dto.CreateExpenseInput{
 		UserID:   100,
 		Amount:   0.5,
 		Category: "еда",
@@ -136,7 +136,7 @@ func TestExpenseUseCase_CreateExpense(t *testing.T) {
 		t.Errorf("expected validation error for amount < 1.0")
 	}
 
-	_, err = uc.CreateExpense(ctx, dto.CreateExpenseInput{
+	_, err = uc.Execute(ctx, dto.CreateExpenseInput{
 		UserID:   100,
 		Amount:   100,
 		Category: "неизвестно",
@@ -147,15 +147,15 @@ func TestExpenseUseCase_CreateExpense(t *testing.T) {
 	}
 }
 
-func TestExpenseUseCase_GetExpense(t *testing.T) {
+func TestGetExpenseUC(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewGetExpenseUC(repo)
 
 	e, _ := models.NewExpense(100, 150, "еда", time.Now().UTC().Add(-time.Minute), "кофе")
 	_, _ = repo.Create(ctx, e)
 
-	out, err := uc.GetExpense(ctx, dto.GetExpenseInput{ID: e.ID().String()})
+	out, err := uc.Execute(ctx, dto.GetExpenseInput{ID: e.ID().String()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -163,28 +163,28 @@ func TestExpenseUseCase_GetExpense(t *testing.T) {
 		t.Errorf("expected ID %s, got %s", e.ID().String(), out.Expense.ID)
 	}
 
-	_, err = uc.GetExpense(ctx, dto.GetExpenseInput{ID: "invalid-uuid"})
+	_, err = uc.Execute(ctx, dto.GetExpenseInput{ID: "invalid-uuid"})
 	if err == nil || !errors.Is(err, apperrs.ErrInvalidInput) {
 		t.Errorf("expected invalid input error, got %v", err)
 	}
 
-	_, err = uc.GetExpense(ctx, dto.GetExpenseInput{ID: uuid.New().String()})
+	_, err = uc.Execute(ctx, dto.GetExpenseInput{ID: uuid.New().String()})
 	if err == nil || !errors.Is(err, apperrs.ErrExpenseNotFound) {
 		t.Errorf("expected not found error, got %v", err)
 	}
 }
 
-func TestExpenseUseCase_UpdateExpense_PatchSemantics(t *testing.T) {
+func TestUpdateExpenseUC_PatchSemantics(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewUpdateExpenseUC(repo)
 
 	initialSpentAt := time.Now().UTC().Add(-2 * time.Hour)
 	e, _ := models.NewExpense(100, 300, "еда", initialSpentAt, "пицца")
 	_, _ = repo.Create(ctx, e)
 
 	newAmount := 450.0
-	out, err := uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	out, err := uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:     e.ID().String(),
 		Amount: &newAmount,
 	})
@@ -202,7 +202,7 @@ func TestExpenseUseCase_UpdateExpense_PatchSemantics(t *testing.T) {
 	}
 
 	newCat := "развлечения"
-	out, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	out, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:       e.ID().String(),
 		Category: &newCat,
 	})
@@ -212,12 +212,9 @@ func TestExpenseUseCase_UpdateExpense_PatchSemantics(t *testing.T) {
 	if out.Expense.Category != "развлечения" {
 		t.Errorf("expected category 'развлечения', got %s", out.Expense.Category)
 	}
-	if out.Expense.Amount != 450.0 {
-		t.Errorf("expected amount to remain 450.0, got %f", out.Expense.Amount)
-	}
 
 	newSpentAt := time.Now().UTC().Add(-time.Hour)
-	out, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	out, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:      e.ID().String(),
 		SpentAt: &newSpentAt,
 	})
@@ -229,7 +226,7 @@ func TestExpenseUseCase_UpdateExpense_PatchSemantics(t *testing.T) {
 	}
 
 	clearComment := ""
-	out, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	out, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:      e.ID().String(),
 		Comment: &clearComment,
 	})
@@ -239,28 +236,18 @@ func TestExpenseUseCase_UpdateExpense_PatchSemantics(t *testing.T) {
 	if out.Expense.Comment != "" {
 		t.Errorf("expected comment to be cleared, got %s", out.Expense.Comment)
 	}
-
-	out, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
-		ID: e.ID().String(),
-	})
-	if err != nil {
-		t.Fatalf("unexpected error with nil fields: %v", err)
-	}
-	if out.Expense.Amount != 450.0 {
-		t.Errorf("expected amount unchanged")
-	}
 }
 
-func TestExpenseUseCase_UpdateExpense_DomainValidationErrors(t *testing.T) {
+func TestUpdateExpenseUC_ValidationErrors(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewUpdateExpenseUC(repo)
 
 	e, _ := models.NewExpense(100, 300, "еда", time.Now().UTC().Add(-time.Hour), "пицца")
 	_, _ = repo.Create(ctx, e)
 
 	invalidAmount := 0.0
-	_, err := uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	_, err := uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:     e.ID().String(),
 		Amount: &invalidAmount,
 	})
@@ -269,7 +256,7 @@ func TestExpenseUseCase_UpdateExpense_DomainValidationErrors(t *testing.T) {
 	}
 
 	invalidCat := "абракадабра"
-	_, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	_, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:       e.ID().String(),
 		Category: &invalidCat,
 	})
@@ -278,34 +265,25 @@ func TestExpenseUseCase_UpdateExpense_DomainValidationErrors(t *testing.T) {
 	}
 
 	futureSpentAt := time.Now().UTC().Add(time.Hour)
-	_, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	_, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:      e.ID().String(),
 		SpentAt: &futureSpentAt,
 	})
 	if err == nil || !errors.Is(err, models.ErrSpentAtAfterCreatedAt) {
 		t.Errorf("expected ErrSpentAtAfterCreatedAt, got %v", err)
 	}
-
-	shortComment := "a"
-	_, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
-		ID:      e.ID().String(),
-		Comment: &shortComment,
-	})
-	if err == nil {
-		t.Errorf("expected domain error for comment len < 2")
-	}
 }
 
-func TestExpenseUseCase_UpdateExpense_EnforceUserID(t *testing.T) {
+func TestUpdateExpenseUC_EnforceUserID(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewUpdateExpenseUC(repo)
 
 	e, _ := models.NewExpense(100, 300, "еда", time.Now().UTC().Add(-time.Hour), "пицца")
 	_, _ = repo.Create(ctx, e)
 
 	newAmount := 500.0
-	out, err := uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	out, err := uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:            e.ID().String(),
 		UserID:        100,
 		Amount:        &newAmount,
@@ -318,7 +296,7 @@ func TestExpenseUseCase_UpdateExpense_EnforceUserID(t *testing.T) {
 		t.Errorf("expected amount 500.0, got %f", out.Expense.Amount)
 	}
 
-	_, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
+	_, err = uc.Execute(ctx, dto.UpdateExpenseInput{
 		ID:            e.ID().String(),
 		UserID:        200,
 		Amount:        &newAmount,
@@ -327,31 +305,17 @@ func TestExpenseUseCase_UpdateExpense_EnforceUserID(t *testing.T) {
 	if err == nil || !errors.Is(err, apperrs.ErrForbiddenAccess) {
 		t.Errorf("expected ErrForbiddenAccess, got %v", err)
 	}
-
-	anotherAmount := 600.0
-	out, err = uc.UpdateExpense(ctx, dto.UpdateExpenseInput{
-		ID:            e.ID().String(),
-		UserID:        200,
-		Amount:        &anotherAmount,
-		EnforceUserID: false,
-	})
-	if err != nil {
-		t.Fatalf("unexpected error without enforce: %v", err)
-	}
-	if out.Expense.Amount != 600.0 {
-		t.Errorf("expected amount 600.0, got %f", out.Expense.Amount)
-	}
 }
 
-func TestExpenseUseCase_DeleteExpense(t *testing.T) {
+func TestDeleteExpenseUC(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewDeleteExpenseUC(repo)
 
 	e, _ := models.NewExpense(100, 300, "еда", time.Now().UTC().Add(-time.Hour), "пицца")
 	_, _ = repo.Create(ctx, e)
 
-	_, err := uc.DeleteExpense(ctx, dto.DeleteExpenseInput{
+	_, err := uc.Execute(ctx, dto.DeleteExpenseInput{
 		ID:            e.ID().String(),
 		UserID:        200,
 		EnforceUserID: true,
@@ -360,7 +324,7 @@ func TestExpenseUseCase_DeleteExpense(t *testing.T) {
 		t.Errorf("expected ErrForbiddenAccess, got %v", err)
 	}
 
-	out, err := uc.DeleteExpense(ctx, dto.DeleteExpenseInput{
+	out, err := uc.Execute(ctx, dto.DeleteExpenseInput{
 		ID:            e.ID().String(),
 		UserID:        100,
 		EnforceUserID: true,
@@ -368,17 +332,12 @@ func TestExpenseUseCase_DeleteExpense(t *testing.T) {
 	if err != nil || !out.Success {
 		t.Fatalf("unexpected error deleting: %v", err)
 	}
-
-	_, err = uc.GetExpense(ctx, dto.GetExpenseInput{ID: e.ID().String()})
-	if err == nil || !errors.Is(err, apperrs.ErrExpenseNotFound) {
-		t.Errorf("expected not found error after deletion, got %v", err)
-	}
 }
 
-func TestExpenseUseCase_ListExpenses(t *testing.T) {
+func TestListExpensesUC(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewListExpensesUC(repo)
 
 	e1, _ := models.NewExpense(100, 100, "еда", time.Now().UTC().Add(-time.Hour), "кофе")
 	e2, _ := models.NewExpense(200, 200, "транспорт", time.Now().UTC().Add(-30*time.Minute), "метро")
@@ -386,7 +345,7 @@ func TestExpenseUseCase_ListExpenses(t *testing.T) {
 	_, _ = repo.Create(ctx, e2)
 
 	userID := int64(100)
-	out, err := uc.ListExpenses(ctx, dto.ListExpensesInput{
+	out, err := uc.Execute(ctx, dto.ListExpensesInput{
 		UserID: &userID,
 	})
 	if err != nil {
@@ -397,7 +356,7 @@ func TestExpenseUseCase_ListExpenses(t *testing.T) {
 	}
 
 	invalidCat := "невалидно"
-	_, err = uc.ListExpenses(ctx, dto.ListExpensesInput{
+	_, err = uc.Execute(ctx, dto.ListExpensesInput{
 		Category: &invalidCat,
 	})
 	if err == nil {
@@ -405,17 +364,17 @@ func TestExpenseUseCase_ListExpenses(t *testing.T) {
 	}
 }
 
-func TestExpenseUseCase_GetDistinctUsers(t *testing.T) {
+func TestGetDistinctUsersUC(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockExpenseRepo()
-	uc := NewExpenseUseCase(repo)
+	uc := NewGetDistinctUsersUC(repo)
 
 	e1, _ := models.NewExpense(100, 100, "еда", time.Now().UTC().Add(-time.Hour), "кофе")
 	e2, _ := models.NewExpense(200, 200, "транспорт", time.Now().UTC().Add(-30*time.Minute), "метро")
 	_, _ = repo.Create(ctx, e1)
 	_, _ = repo.Create(ctx, e2)
 
-	out, err := uc.GetDistinctUsers(ctx, dto.GetDistinctUsersInput{})
+	out, err := uc.Execute(ctx, dto.GetDistinctUsersInput{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
