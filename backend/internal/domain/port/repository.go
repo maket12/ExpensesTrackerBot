@@ -2,11 +2,21 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"backend/internal/domain/models"
 
 	"github.com/google/uuid"
 )
+
+type ExpenseFilter struct {
+	UserID   *int64
+	Category *models.Category
+	From     *time.Time
+	To       *time.Time
+	Limit    int
+	Offset   int
+}
 
 type ExpenseRepository interface {
 	Create(ctx context.Context, expense *models.Expense) (*models.Expense, error)

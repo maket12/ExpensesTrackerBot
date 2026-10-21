@@ -235,40 +235,22 @@ func (a *AgentUseCase) executeTool(ctx context.Context, userID int64, tc port.To
 			return fmt.Sprintf(`{"error":"некорректные параметры: %s"}`, err.Error())
 		}
 
-		existing, err := a.expenseUseCase.GetExpense(ctx, dto.GetExpenseInput{ID: args.ID})
-		if err != nil {
-			return fmt.Sprintf(`{"error":"трата с id %s не найдена"}`, args.ID)
-		}
-
-		amount := existing.Expense.Amount
-		if args.Amount != nil {
-			amount = *args.Amount
-		}
-
-		category := existing.Expense.Category
-		if args.Category != nil {
-			category = *args.Category
-		}
-
-		spentAt := existing.Expense.SpentAt
+		var spentAt *time.Time
 		if args.SpentAt != nil {
-			if t, err := time.Parse(time.RFC3339, *args.SpentAt); err == nil {
-				spentAt = t
+			t, err := time.Parse(time.RFC3339, *args.SpentAt)
+			if err != nil {
+				return fmt.Sprintf(`{"error":"некорректный формат spent_at: %s"}`, err.Error())
 			}
-		}
-
-		comment := existing.Expense.Comment
-		if args.Comment != nil {
-			comment = *args.Comment
+			spentAt = &t
 		}
 
 		out, err := a.expenseUseCase.UpdateExpense(ctx, dto.UpdateExpenseInput{
 			ID:            args.ID,
 			UserID:        userID,
-			Amount:        amount,
-			Category:      category,
+			Amount:        args.Amount,
+			Category:      args.Category,
 			SpentAt:       spentAt,
-			Comment:       comment,
+			Comment:       args.Comment,
 			EnforceUserID: true,
 		})
 		if err != nil {

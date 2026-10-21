@@ -1,4 +1,4 @@
-package dto
+package llm
 
 type ToolCallDTO struct {
 	ID        string
@@ -26,18 +26,7 @@ type ToolParameterProperty struct {
 }
 
 type ToolParameters struct {
-	Type       string                            `json:"type"`
+	Type       string                           `json:"type"`
 	Properties map[string]ToolParameterProperty `json:"properties"`
-	Required   []string                          `json:"required,omitempty"`
-}
-
-type GenerateCompletionRequest struct {
-	Model    string
-	Messages []AgentMessageDTO
-	Tools    []AgentToolDTO
-}
-
-type GenerateCompletionResponse struct {
-	Content   string
-	ToolCalls []ToolCallDTO
+	Required   []string                         `json:"required,omitempty"`
 }

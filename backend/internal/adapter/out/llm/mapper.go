@@ -1,7 +1,6 @@
-package mapper
+package llm
 
 import (
-	"backend/internal/adapter/out/llm/dto"
 	"backend/internal/domain/port"
 
 	"github.com/sashabaranov/go-openai"
@@ -43,9 +42,9 @@ func DefaultOpenAITools() []openai.Tool {
 			Function: &openai.FunctionDefinition{
 				Name:        "add_expense",
 				Description: "Сохранить новую трату пользователя",
-				Parameters: dto.ToolParameters{
+				Parameters: ToolParameters{
 					Type: "object",
-					Properties: map[string]dto.ToolParameterProperty{
+					Properties: map[string]ToolParameterProperty{
 						"amount": {
 							Type:        "number",
 							Description: "Сумма траты больше 0",
@@ -75,9 +74,9 @@ func DefaultOpenAITools() []openai.Tool {
 			Function: &openai.FunctionDefinition{
 				Name:        "list_expenses",
 				Description: "Получить список последних трат пользователя или посчитать сумму за период",
-				Parameters: dto.ToolParameters{
+				Parameters: ToolParameters{
 					Type: "object",
-					Properties: map[string]dto.ToolParameterProperty{
+					Properties: map[string]ToolParameterProperty{
 						"limit": {
 							Type:        "integer",
 							Description: "Максимальное число записей (по умолчанию 10)",
@@ -106,9 +105,9 @@ func DefaultOpenAITools() []openai.Tool {
 			Function: &openai.FunctionDefinition{
 				Name:        "update_expense",
 				Description: "Изменить существующую запись траты пользователя по её ID",
-				Parameters: dto.ToolParameters{
+				Parameters: ToolParameters{
 					Type: "object",
-					Properties: map[string]dto.ToolParameterProperty{
+					Properties: map[string]ToolParameterProperty{
 						"id": {
 							Type:        "string",
 							Description: "UUID идентификатор траты",
@@ -142,9 +141,9 @@ func DefaultOpenAITools() []openai.Tool {
 			Function: &openai.FunctionDefinition{
 				Name:        "delete_expense",
 				Description: "Удалить трату пользователя по её ID",
-				Parameters: dto.ToolParameters{
+				Parameters: ToolParameters{
 					Type: "object",
-					Properties: map[string]dto.ToolParameterProperty{
+					Properties: map[string]ToolParameterProperty{
 						"id": {
 							Type:        "string",
 							Description: "UUID идентификатор удаляемой траты",

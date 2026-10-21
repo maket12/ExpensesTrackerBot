@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"context"
-	"time"
 
 	"backend/internal/app/dto"
 	apperrs "backend/internal/app/errs"
@@ -77,27 +76,7 @@ func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpe
 		return dto.UpdateExpenseOutput{}, apperrs.ErrForbiddenAccess
 	}
 
-	var amountPtr *float64
-	if input.Amount > 0 {
-		amountPtr = &input.Amount
-	}
-
-	var catPtr *string
-	if input.Category != "" {
-		catPtr = &input.Category
-	}
-
-	var spentAtPtr *time.Time
-	if !input.SpentAt.IsZero() {
-		spentAtPtr = &input.SpentAt
-	}
-
-	var commPtr *string
-	if input.Comment != "" {
-		commPtr = &input.Comment
-	}
-
-	if err := existing.Update(amountPtr, catPtr, spentAtPtr, commPtr); err != nil {
+	if err := existing.Update(input.Amount, input.Category, input.SpentAt, input.Comment); err != nil {
 		return dto.UpdateExpenseOutput{}, err
 	}
 
@@ -159,8 +138,4 @@ func (u *ExpenseUseCase) GetDistinctUsers(ctx context.Context, _ dto.GetDistinct
 	return dto.GetDistinctUsersOutput{
 		UserIDs: userIDs,
 	}, nil
-}
-
-func (u *ExpenseUseCase) GetLatestByUser(ctx context.Context, userID int64, limit int) ([]*models.Expense, error) {
-	return u.repo.ListLatest(ctx, userID, limit)
 }

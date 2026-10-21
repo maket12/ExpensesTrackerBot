@@ -5,10 +5,10 @@ import "time"
 type UpdateExpenseInput struct {
 	ID            string
 	UserID        int64
-	Amount        float64
-	Category      string
-	SpentAt       time.Time
-	Comment       string
+	Amount        *float64
+	Category      *string
+	SpentAt       *time.Time
+	Comment       *string
 	EnforceUserID bool
 }
 

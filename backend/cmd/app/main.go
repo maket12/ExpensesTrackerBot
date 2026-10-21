@@ -48,9 +48,9 @@ func main() {
 	defer pgClient.Close()
 	slog.Info("connected to postgresql successfully")
 
-	repo := postgresadapter.NewRepository(pgClient)
+	repo := postgresadapter.NewExpensesRepository(pgClient)
 	expenseUseCase := usecases.NewExpenseUseCase(repo)
-	memoryStore := memory.NewStore(15)
+	memoryStore := memory.NewStore()
 
 	var agentUseCase *usecases.AgentUseCase
 	if cfg.LLMAPIKey != "" {

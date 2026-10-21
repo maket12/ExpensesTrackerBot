@@ -1,11 +1,10 @@
 package llm
 
 import (
+	pkgerrs "backend/pkg/errs"
 	"context"
 	"fmt"
 
-	"backend/internal/adapter/out/llm/errs"
-	"backend/internal/adapter/out/llm/mapper"
 	"backend/internal/domain/port"
 
 	"github.com/sashabaranov/go-openai"
@@ -18,29 +17,30 @@ type Client struct {
 }
 
 func NewClient(baseURL, apiKey, model string) (*Client, error) {
+	if baseURL == "" {
+		return nil, pkgerrs.NewValueRequiredError("llm_base_url")
+	}
 	if apiKey == "" {
-		return nil, errs.ErrEmptyAPIKey
+		return nil, pkgerrs.NewValueRequiredError("llm_api_key")
 	}
 	if model == "" {
-		model = openai.GPT4oMini
+		return nil, pkgerrs.NewValueRequiredError("llm_model")
 	}
 
 	cfg := openai.DefaultConfig(apiKey)
-	if baseURL != "" {
-		cfg.BaseURL = baseURL
-	}
+	cfg.BaseURL = baseURL
 
 	return &Client{
 		client: openai.NewClientWithConfig(cfg),
 		model:  model,
-		tools:  mapper.DefaultOpenAITools(),
+		tools:  DefaultOpenAITools(),
 	}, nil
 }
 
 func (c *Client) GenerateResponse(ctx context.Context, messages []port.AgentMessage) (port.AgentResponse, error) {
 	req := openai.ChatCompletionRequest{
 		Model:       c.model,
-		Messages:    mapper.ToOpenAIMessages(messages),
+		Messages:    ToOpenAIMessages(messages),
 		Temperature: 0.1,
 		Tools:       c.tools,
 		ToolChoice:  "auto",
@@ -48,13 +48,13 @@ func (c *Client) GenerateResponse(ctx context.Context, messages []port.AgentMess
 
 	resp, err := c.client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		return port.AgentResponse{}, fmt.Errorf("%w: %v", errs.ErrCompletionFailed, err)
+		return port.AgentResponse{}, fmt.Errorf("failed to fetch llm model: %w", err)
 	}
 
 	if len(resp.Choices) == 0 {
-		return port.AgentResponse{}, errs.ErrEmptyResponse
+		return port.AgentResponse{}, fmt.Errorf("expected llm to response but got nothing")
 	}
 
 	choice := resp.Choices[0]
-	return mapper.ToDomainAgentResponse(choice), nil
+	return ToDomainAgentResponse(choice), nil
 }

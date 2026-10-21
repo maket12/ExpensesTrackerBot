@@ -3,14 +3,14 @@ package dto
 import "time"
 
 type ExpenseDTO struct {
-	ID        string    `json:"id"`
-	UserID    int64     `json:"user_id"`
-	Amount    float64   `json:"amount"`
-	Category  string    `json:"category"`
-	SpentAt   time.Time `json:"spent_at"`
-	Comment   string    `json:"comment"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string
+	UserID    int64
+	Amount    float64
+	Category  string
+	SpentAt   time.Time
+	Comment   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type CreateExpenseInput struct {
