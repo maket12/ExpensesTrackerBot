@@ -3,20 +3,22 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	httpadapter "backend/internal/adapter/in/http"
+	"backend/cmd/app/config"
+	adapterhttp "backend/internal/adapter/in/http"
 	tgadapter "backend/internal/adapter/in/telegram"
 	"backend/internal/adapter/out/llm"
 	"backend/internal/adapter/out/memory"
 	postgresadapter "backend/internal/adapter/out/postgres"
 	"backend/internal/app/usecases"
-	"backend/internal/config"
 	pkgpostgres "backend/pkg/postgres"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -25,30 +27,123 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
+const (
+	shutdownTimeout = 10 * time.Second
+)
 
-	cfg := config.Load()
-	slog.Info("configuration loaded", "port", cfg.Port, "db_host", cfg.DBHost, "db_port", cfg.DBPort, "db_name", cfg.DBName, "llm_model", cfg.LLMModel)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	pgCfg := cfg.PostgresConfig()
-	runMigrations(pgCfg.MigrationDSN())
-
-	pgClient, err := pkgpostgres.NewClient(ctx, pgCfg)
-	if err != nil {
-		slog.Error("failed to create postgres client", "error", err)
-		os.Exit(1)
+func parseLogLevel(level string) slog.Level {
+	switch level {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "INFO":
+		return slog.LevelInfo
+	case "WARN":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
-	defer pgClient.Close()
-	slog.Info("connected to postgresql successfully")
+}
 
+func newLogger(level string) *slog.Logger {
+	logLevel := parseLogLevel(level)
+	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	}))
+}
+
+func newPostgresClient(ctx context.Context, cfg *config.Config) (*pkgpostgres.Client, error) {
+	pgConfig := pkgpostgres.NewConfig(
+		cfg.DbHost, cfg.DbPort, cfg.DbUser, cfg.DbPassword,
+		cfg.DBName, cfg.DbSSLMode, cfg.DbMaxConn,
+		cfg.DbMinConn, cfg.DbMaxConnLifeTime, cfg.DbMaxConnIdleTime,
+	)
+
+	pgClient, err := pkgpostgres.NewClient(ctx, pgConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgClient, nil
+}
+
+func closePostgresClient(
+	ctx context.Context,
+	logger *slog.Logger,
+	pgClient *pkgpostgres.Client,
+) {
+	logger.InfoContext(ctx, "closing postgres connection...")
+	pgClient.Close()
+}
+
+func newLLMClient(
+	ctx context.Context,
+	cfg *config.Config,
+	createUC *usecases.CreateExpenseUC,
+	listUC *usecases.ListExpensesUC,
+	updateUC *usecases.UpdateExpenseUC,
+	deleteUC *usecases.DeleteExpenseUC,
+) (*llm.Client, error) {
+	return llm.NewClient(
+		cfg.LLMBaseURL,
+		cfg.LLMAPIKey,
+		cfg.LLMModel,
+		createUC,
+		listUC,
+		updateUC,
+		deleteUC,
+	)
+}
+
+func closeLLMClient(
+	ctx context.Context,
+	logger *slog.Logger,
+	llmClient *llm.Client,
+) {
+	logger.InfoContext(ctx, "closing llm client...")
+	if llmClient != nil {
+		if err := llmClient.Close(); err != nil {
+			logger.ErrorContext(ctx, "failed to close llm client", slog.Any("err", err))
+		}
+	}
+}
+
+func runMigrations(logger *slog.Logger, dsn string) {
+	m, err := migrate.New("file://migrations", dsn)
+	if err != nil {
+		logger.Warn("migration init warning", slog.Any("error", err))
+		return
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		logger.Warn("migration up warning", slog.Any("error", err))
+	} else {
+		logger.Info("database migrations applied successfully")
+	}
+}
+
+func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) error {
+	// Postgres client
+	pgConfig := pkgpostgres.NewConfig(
+		cfg.DbHost, cfg.DbPort, cfg.DbUser, cfg.DbPassword,
+		cfg.DBName, cfg.DbSSLMode, cfg.DbMaxConn,
+		cfg.DbMinConn, cfg.DbMaxConnLifeTime, cfg.DbMaxConnIdleTime,
+	)
+	runMigrations(logger, pgConfig.MigrationDSN())
+
+	pgClient, err := newPostgresClient(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to init postgres client: %w", err)
+	}
+	defer closePostgresClient(ctx, logger, pgClient)
+
+	// Adapters
 	repo := postgresadapter.NewExpensesRepository(pgClient)
+	memoryStore := memory.NewStore()
+
+	// Use-cases (Public API)
 	createExpenseUC := usecases.NewCreateExpenseUC(repo)
 	getExpenseUC := usecases.NewGetExpenseUC(repo)
 	updateExpenseUC := usecases.NewUpdateExpenseUC(repo)
@@ -56,30 +151,24 @@ func main() {
 	listExpensesUC := usecases.NewListExpensesUC(repo)
 	getDistinctUsersUC := usecases.NewGetDistinctUsersUC(repo)
 
-	memoryStore := memory.NewStore()
-
-	var handleMessageUC *usecases.HandleAgentMessageUC
-	if cfg.LLMAPIKey != "" {
-		llmClient, err := llm.NewClient(
-			cfg.LLMBaseURL,
-			cfg.LLMAPIKey,
-			cfg.LLMModel,
-			createExpenseUC,
-			listExpensesUC,
-			updateExpenseUC,
-			deleteExpenseUC,
-		)
-		if err != nil {
-			slog.Warn("failed to initialize llm client", "error", err)
-		} else {
-			handleMessageUC = usecases.NewHandleAgentMessageUC(llmClient, memoryStore)
-			slog.Info("LLM client initialized", "model", cfg.LLMModel, "base_url", cfg.LLMBaseURL)
-		}
-	} else {
-		slog.Warn("LLM_API_KEY is not set, AI features will be disabled")
+	llmClient, err := newLLMClient(
+		ctx,
+		cfg,
+		createExpenseUC,
+		listExpensesUC,
+		updateExpenseUC,
+		deleteExpenseUC,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init llm client: %w", err)
 	}
+	defer closeLLMClient(ctx, logger, llmClient)
 
-	httpHandler := httpadapter.NewHandler(
+	// Use-cases (Partner API)
+	handleMessageUC := usecases.NewHandleAgentMessageUC(llmClient, memoryStore)
+
+	// Handlers
+	httpHandler := adapterhttp.NewHandler(
 		createExpenseUC,
 		getExpenseUC,
 		updateExpenseUC,
@@ -87,28 +176,32 @@ func main() {
 		listExpensesUC,
 		getDistinctUsersUC,
 	)
-	echoRouter := httpadapter.NewRouter(httpHandler)
+
+	router := adapterhttp.NewRouter(httpHandler)
 
 	var tgBot *tgadapter.Bot
-	if cfg.TelegramBotToken != "" && handleMessageUC != nil {
-		bot, err := tgadapter.NewBot(cfg.TelegramBotToken, handleMessageUC)
+	if cfg.TelegramBotToken != "" {
+		tgBot, err = tgadapter.NewBot(cfg.TelegramBotToken, handleMessageUC)
 		if err != nil {
-			slog.Warn("failed to initialize telegram bot", "error", err)
-		} else {
-			tgBot = bot
-			slog.Info("telegram bot initialized successfully")
+			return fmt.Errorf("failed to init telegram bot: %w", err)
 		}
-	} else if cfg.TelegramBotToken == "" {
-		slog.Warn("TELEGRAM_BOT_TOKEN is not set, telegram bot will not run")
+	}
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HttpPort),
+		Handler: router,
+
+		BaseContext: func(_ net.Listener) context.Context {
+			return ctx
+		},
 	}
 
 	g, gCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		addr := ":" + cfg.Port
-		slog.Info("starting HTTP server", "address", addr)
-		if err := echoRouter.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("HTTP server failed", "error", err)
+		logger.InfoContext(gCtx, "starting server", slog.Int("port", cfg.HttpPort))
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.ErrorContext(gCtx, "server failed", slog.Any("err", err))
 			return err
 		}
 		return nil
@@ -116,45 +209,56 @@ func main() {
 
 	g.Go(func() error {
 		<-gCtx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		logger.InfoContext(ctx, "shutdown signal received")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
-		slog.Info("shutting down HTTP server")
-		return echoRouter.Shutdown(shutdownCtx)
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			logger.ErrorContext(ctx, "graceful shutdown failed", slog.Any("err", err))
+			_ = srv.Close() // fallback
+			return err
+		}
+		return nil
 	})
 
 	if tgBot != nil {
 		g.Go(func() error {
-			slog.Info("starting Telegram bot long polling")
+			logger.InfoContext(gCtx, "starting Telegram bot long polling")
 			tgBot.Start()
 			return nil
 		})
 
 		g.Go(func() error {
 			<-gCtx.Done()
-			slog.Info("stopping Telegram bot")
+			logger.InfoContext(ctx, "stopping Telegram bot")
 			tgBot.Stop()
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		slog.Error("application stopped with error", "error", err)
-	} else {
-		slog.Info("application gracefully stopped")
+		logger.ErrorContext(ctx, "server stopped with error", slog.Any("err", err))
+		return err
 	}
+
+	logger.InfoContext(ctx, "server exited properly")
+	return nil
 }
 
-func runMigrations(dsn string) {
-	m, err := migrate.New("file://migrations", dsn)
+func main() {
+	cfg, err := config.Load()
 	if err != nil {
-		slog.Warn("migration init warning", "error", err)
-		return
+		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
+		os.Exit(1)
 	}
-	defer m.Close()
 
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		slog.Warn("migration up warning", "error", err)
-	} else {
-		slog.Info("database migrations applied successfully")
+	logger := newLogger(cfg.LogLevel)
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err = runServer(ctx, cfg, logger); err != nil {
+		os.Exit(1)
 	}
 }

@@ -4,6 +4,7 @@ go 1.26.2
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0

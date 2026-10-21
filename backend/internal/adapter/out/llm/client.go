@@ -63,6 +63,10 @@ func NewClient(
 	}, nil
 }
 
+func (c *Client) Close() error {
+	return nil
+}
+
 func (c *Client) GenerateReply(ctx context.Context, userID int64, history []port.ChatMessage, userMessage string) (string, error) {
 	now := time.Now().UTC()
 	systemPrompt := BuildSystemPrompt(now)
