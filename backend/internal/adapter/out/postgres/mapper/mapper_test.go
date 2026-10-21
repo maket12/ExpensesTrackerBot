@@ -128,3 +128,15 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Errorf("expected comment 'обед', got %v", domainExpense.Comment())
 	}
 }
+
+func TestToListLatestExpensesParams(t *testing.T) {
+	params := ToListLatestExpensesParams(123, 10)
+	if params.UserID != 123 || params.Limit != 10 {
+		t.Errorf("expected UserID 123, Limit 10, got %v", params)
+	}
+
+	defaultParams := ToListLatestExpensesParams(123, 0)
+	if defaultParams.Limit != 5 {
+		t.Errorf("expected default Limit 5, got %d", defaultParams.Limit)
+	}
+}

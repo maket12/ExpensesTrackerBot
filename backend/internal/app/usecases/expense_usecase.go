@@ -52,7 +52,7 @@ func (u *ExpenseUseCase) GetExpense(ctx context.Context, input dto.GetExpenseInp
 		return dto.GetExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
 	}
 
-	expense, err := u.repo.GetByID(ctx, id)
+	expense, err := u.repo.Get(ctx, id)
 	if err != nil {
 		return dto.GetExpenseOutput{}, err
 	}
@@ -68,7 +68,7 @@ func (u *ExpenseUseCase) UpdateExpense(ctx context.Context, input dto.UpdateExpe
 		return dto.UpdateExpenseOutput{}, apperrs.NewInvalidInputError("id", pkgerrs.ErrInvalidIdentifier)
 	}
 
-	existing, err := u.repo.GetByID(ctx, id)
+	existing, err := u.repo.Get(ctx, id)
 	if err != nil {
 		return dto.UpdateExpenseOutput{}, err
 	}
@@ -118,7 +118,7 @@ func (u *ExpenseUseCase) DeleteExpense(ctx context.Context, input dto.DeleteExpe
 	}
 
 	if input.EnforceUserID {
-		existing, err := u.repo.GetByID(ctx, id)
+		existing, err := u.repo.Get(ctx, id)
 		if err != nil {
 			return dto.DeleteExpenseOutput{}, err
 		}
@@ -151,7 +151,7 @@ func (u *ExpenseUseCase) ListExpenses(ctx context.Context, input dto.ListExpense
 }
 
 func (u *ExpenseUseCase) GetDistinctUsers(ctx context.Context, _ dto.GetDistinctUsersInput) (dto.GetDistinctUsersOutput, error) {
-	userIDs, err := u.repo.GetDistinctUserIDs(ctx)
+	userIDs, err := u.repo.ListUserIDS(ctx)
 	if err != nil {
 		return dto.GetDistinctUsersOutput{}, err
 	}
@@ -162,5 +162,5 @@ func (u *ExpenseUseCase) GetDistinctUsers(ctx context.Context, _ dto.GetDistinct
 }
 
 func (u *ExpenseUseCase) GetLatestByUser(ctx context.Context, userID int64, limit int) ([]*models.Expense, error) {
-	return u.repo.GetLatestByUser(ctx, userID, limit)
+	return u.repo.ListLatest(ctx, userID, limit)
 }

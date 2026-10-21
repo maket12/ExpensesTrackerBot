@@ -97,6 +97,16 @@ func ToUpdateExpenseParams(e *models.Expense) sqlc.UpdateExpenseParams {
 	}
 }
 
+func ToListLatestExpensesParams(userID int64, limit int) sqlc.GetLatestExpensesByUserParams {
+	if limit <= 0 {
+		limit = 5
+	}
+	return sqlc.GetLatestExpensesByUserParams{
+		UserID: userID,
+		Limit:  int32(limit),
+	}
+}
+
 func ToListExpensesFilteredParams(filter port.ExpenseFilter) sqlc.ListExpensesFilteredParams {
 	var categoryStr *string
 	if filter.Category != nil {
