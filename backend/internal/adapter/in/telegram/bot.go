@@ -1,13 +1,13 @@
 package telegram
 
 import (
+	pkgerrs "backend/pkg/errs"
 	"context"
 	"log/slog"
 	"strings"
 	"time"
 
 	"backend/internal/adapter/in/telegram/dto"
-	"backend/internal/adapter/in/telegram/errs"
 	"backend/internal/adapter/in/telegram/mapper"
 	"backend/internal/app/usecases"
 
@@ -21,7 +21,7 @@ type Bot struct {
 
 func NewBot(token string, handleMessageUC *usecases.HandleAgentMessageUC) (*Bot, error) {
 	if strings.TrimSpace(token) == "" {
-		return nil, errs.ErrEmptyToken
+		return nil, pkgerrs.NewValueRequiredError("bot_token")
 	}
 
 	pref := telebot.Settings{

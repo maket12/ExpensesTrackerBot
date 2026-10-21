@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createExpense = `-- name: CreateExpense :one
+const createExpense = `-- name: Create :one
 INSERT INTO expenses (id, user_id, amount, category, spent_at, comment, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
@@ -53,7 +53,7 @@ func (q *Queries) CreateExpense(ctx context.Context, db DBTX, arg CreateExpenseP
 	return i, err
 }
 
-const deleteExpense = `-- name: DeleteExpense :exec
+const deleteExpense = `-- name: Delete :exec
 DELETE FROM expenses
 WHERE id = $1
 `
@@ -209,7 +209,7 @@ func (q *Queries) ListExpensesFiltered(ctx context.Context, db DBTX, arg ListExp
 	return items, nil
 }
 
-const updateExpense = `-- name: UpdateExpense :one
+const updateExpense = `-- name: Update :one
 UPDATE expenses
 SET amount = $2,
     category = $3,

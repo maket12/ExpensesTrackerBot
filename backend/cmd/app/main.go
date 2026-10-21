@@ -143,7 +143,7 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 	repo := postgresadapter.NewExpensesRepository(pgClient)
 	memoryStore := memory.NewStore()
 
-	// Use-cases (Public API)
+	// Use-cases
 	createExpenseUC := usecases.NewCreateExpenseUC(repo)
 	getExpenseUC := usecases.NewGetExpenseUC(repo)
 	updateExpenseUC := usecases.NewUpdateExpenseUC(repo)
@@ -164,11 +164,10 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 	}
 	defer closeLLMClient(ctx, logger, llmClient)
 
-	// Use-cases (Partner API)
 	handleMessageUC := usecases.NewHandleAgentMessageUC(llmClient, memoryStore)
 
-	// Handlers
-	httpHandler := adapterhttp.NewHandler(
+	// ExpensesHandler & Router
+	httpHandler := adapterhttp.NewExpensesHandler(
 		createExpenseUC,
 		getExpenseUC,
 		updateExpenseUC,

@@ -16,7 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Handler struct {
+type ExpensesHandler struct {
 	createExpenseUC    *usecases.CreateExpenseUC
 	getExpenseUC       *usecases.GetExpenseUC
 	updateExpenseUC    *usecases.UpdateExpenseUC
@@ -25,15 +25,15 @@ type Handler struct {
 	getDistinctUsersUC *usecases.GetDistinctUsersUC
 }
 
-func NewHandler(
+func NewExpensesHandler(
 	createExpenseUC *usecases.CreateExpenseUC,
 	getExpenseUC *usecases.GetExpenseUC,
 	updateExpenseUC *usecases.UpdateExpenseUC,
 	deleteExpenseUC *usecases.DeleteExpenseUC,
 	listExpensesUC *usecases.ListExpensesUC,
 	getDistinctUsersUC *usecases.GetDistinctUsersUC,
-) *Handler {
-	return &Handler{
+) *ExpensesHandler {
+	return &ExpensesHandler{
 		createExpenseUC:    createExpenseUC,
 		getExpenseUC:       getExpenseUC,
 		updateExpenseUC:    updateExpenseUC,
@@ -53,7 +53,7 @@ func NewHandler(
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses [post]
-func (h *Handler) CreateExpense(c echo.Context) error {
+func (h *ExpensesHandler) Create(c echo.Context) error {
 	ctx := c.Request().Context()
 	var req dto.CreateExpenseRequest
 	if err := c.Bind(&req); err != nil {
@@ -80,7 +80,7 @@ func (h *Handler) CreateExpense(c echo.Context) error {
 // @Success 200 {object} dto.ExpenseResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [get]
-func (h *Handler) GetExpense(c echo.Context) error {
+func (h *ExpensesHandler) Get(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 
@@ -113,7 +113,7 @@ func (h *Handler) GetExpense(c echo.Context) error {
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [put]
-func (h *Handler) UpdateExpense(c echo.Context) error {
+func (h *ExpensesHandler) Update(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 	var req dto.UpdateExpenseRequest
@@ -148,7 +148,7 @@ func (h *Handler) UpdateExpense(c echo.Context) error {
 // @Success 204 "No Content"
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [delete]
-func (h *Handler) DeleteExpense(c echo.Context) error {
+func (h *ExpensesHandler) Delete(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 
@@ -183,7 +183,7 @@ func (h *Handler) DeleteExpense(c echo.Context) error {
 // @Success 200 {object} dto.ListExpensesResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Router /api/expenses [get]
-func (h *Handler) ListExpenses(c echo.Context) error {
+func (h *ExpensesHandler) List(c echo.Context) error {
 	ctx := c.Request().Context()
 	var input appdto.ListExpensesInput
 
@@ -240,7 +240,7 @@ func (h *Handler) ListExpenses(c echo.Context) error {
 // @Produce json
 // @Success 200 {object} dto.GetDistinctUsersResponse
 // @Router /api/users [get]
-func (h *Handler) GetDistinctUsers(c echo.Context) error {
+func (h *ExpensesHandler) GetDistinctUsers(c echo.Context) error {
 	ctx := c.Request().Context()
 	out, err := h.getDistinctUsersUC.Execute(ctx, appdto.GetDistinctUsersInput{})
 	if err != nil {
@@ -261,7 +261,7 @@ func (h *Handler) GetDistinctUsers(c echo.Context) error {
 // @Produce json
 // @Success 200 {object} map[string]string
 // @Router /api/health [get]
-func (h *Handler) Health(c echo.Context) error {
+func (h *ExpensesHandler) Health(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "ok",
 		"time":   time.Now().UTC().Format(time.RFC3339),
