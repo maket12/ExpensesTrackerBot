@@ -6,12 +6,22 @@ import (
 	pkgerrs "backend/pkg/errs"
 )
 
+/*
+================ Invalidation & Conflicts ================
+*/
 var (
-	ErrExpenseNotFound    = pkgerrs.ErrObjectNotFound
-	ErrForbiddenAccess    = errors.New("access forbidden")
+	ErrInvalidInput    = errors.New("invalid input")
+	ErrForbiddenAccess = errors.New("access forbidden")
+)
+
+/*
+================ Adapters failures ================
+*/
+var (
+	ErrExpenseNotFound = pkgerrs.ErrObjectNotFound
+
 	ErrAgentMaxIterations = errors.New("agent reached maximum iteration limit")
 	ErrAgentFailed        = errors.New("agent failed to process message")
-	ErrInvalidInput       = pkgerrs.ErrValueIsInvalid
 )
 
 func NewInvalidInputError(paramName string, reason error) *pkgerrs.ValueInvalidError {
@@ -20,4 +30,3 @@ func NewInvalidInputError(paramName string, reason error) *pkgerrs.ValueInvalidE
 	}
 	return pkgerrs.NewValueInvalidError(paramName)
 }
-
