@@ -33,8 +33,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "еда",
+                            "транспорт",
+                            "жильё",
+                            "развлечения",
+                            "здоровье",
+                            "покупки",
+                            "другое",
+                            "все"
+                        ],
                         "type": "string",
-                        "description": "category",
+                        "description": "Category",
                         "name": "category",
                         "in": "query"
                     },
@@ -67,13 +77,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ListExpensesResponse"
+                            "$ref": "#/definitions/dto.ListExpensesResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -97,7 +113,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.CreateExpenseRequest"
+                            "$ref": "#/definitions/dto.CreateExpenseRequest"
                         }
                     }
                 ],
@@ -105,19 +121,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.ExpenseResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -146,13 +162,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.ExpenseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -183,7 +211,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.UpdateExpenseRequest"
+                            "$ref": "#/definitions/dto.UpdateExpenseRequest"
                         }
                     }
                 ],
@@ -191,19 +219,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.ExpenseResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -230,10 +264,22 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -276,7 +322,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapter_in_http_dto.GetDistinctUsersResponse"
+                            "$ref": "#/definitions/dto.GetDistinctUsersResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -284,7 +336,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "backend_internal_adapter_in_http_dto.CreateExpenseRequest": {
+        "dto.CreateExpenseRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -304,7 +356,7 @@ const docTemplate = `{
                 }
             }
         },
-        "backend_internal_adapter_in_http_dto.ErrorResponse": {
+        "dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -312,7 +364,7 @@ const docTemplate = `{
                 }
             }
         },
-        "backend_internal_adapter_in_http_dto.ExpenseResponse": {
+        "dto.ExpenseResponse": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -341,7 +393,7 @@ const docTemplate = `{
                 }
             }
         },
-        "backend_internal_adapter_in_http_dto.GetDistinctUsersResponse": {
+        "dto.GetDistinctUsersResponse": {
             "type": "object",
             "properties": {
                 "user_ids": {
@@ -352,18 +404,18 @@ const docTemplate = `{
                 }
             }
         },
-        "backend_internal_adapter_in_http_dto.ListExpensesResponse": {
+        "dto.ListExpensesResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse"
+                        "$ref": "#/definitions/dto.ExpenseResponse"
                     }
                 }
             }
         },
-        "backend_internal_adapter_in_http_dto.UpdateExpenseRequest": {
+        "dto.UpdateExpenseRequest": {
             "type": "object",
             "properties": {
                 "amount": {

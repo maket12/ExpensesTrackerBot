@@ -34,7 +34,8 @@ func (r *Router) InitRoutes() *echo.Echo {
 	}))
 	router.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/health" || c.Request().URL.Path == "/health"
+			p := c.Path()
+			return p == "/health" || p == "/api/health" || c.Request().URL.Path == "/health" || c.Request().URL.Path == "/api/health"
 		},
 		LogLatency:       true,
 		LogProtocol:      false,

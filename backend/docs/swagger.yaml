@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  backend_internal_adapter_in_http_dto.CreateExpenseRequest:
+  dto.CreateExpenseRequest:
     properties:
       amount:
         type: number
@@ -13,12 +13,12 @@ definitions:
       user_id:
         type: integer
     type: object
-  backend_internal_adapter_in_http_dto.ErrorResponse:
+  dto.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  backend_internal_adapter_in_http_dto.ExpenseResponse:
+  dto.ExpenseResponse:
     properties:
       amount:
         type: number
@@ -37,21 +37,21 @@ definitions:
       user_id:
         type: integer
     type: object
-  backend_internal_adapter_in_http_dto.GetDistinctUsersResponse:
+  dto.GetDistinctUsersResponse:
     properties:
       user_ids:
         items:
           type: integer
         type: array
     type: object
-  backend_internal_adapter_in_http_dto.ListExpensesResponse:
+  dto.ListExpensesResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+          $ref: '#/definitions/dto.ExpenseResponse'
         type: array
     type: object
-  backend_internal_adapter_in_http_dto.UpdateExpenseRequest:
+  dto.UpdateExpenseRequest:
     properties:
       amount:
         type: number
@@ -79,6 +79,15 @@ paths:
         name: user_id
         type: integer
       - description: Category
+        enum:
+        - еда
+        - транспорт
+        - жильё
+        - развлечения
+        - здоровье
+        - покупки
+        - другое
+        - все
         in: query
         name: category
         type: string
@@ -104,11 +113,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ListExpensesResponse'
+            $ref: '#/definitions/dto.ListExpensesResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: List expenses
       tags:
       - expenses
@@ -122,22 +135,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/backend_internal_adapter_in_http_dto.CreateExpenseRequest'
+          $ref: '#/definitions/dto.CreateExpenseRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+            $ref: '#/definitions/dto.ExpenseResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Create a new expense
       tags:
       - expenses
@@ -155,10 +168,18 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Delete an expense
       tags:
       - expenses
@@ -176,11 +197,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+            $ref: '#/definitions/dto.ExpenseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Get expense by ID
       tags:
       - expenses
@@ -199,22 +228,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/backend_internal_adapter_in_http_dto.UpdateExpenseRequest'
+          $ref: '#/definitions/dto.UpdateExpenseRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ExpenseResponse'
+            $ref: '#/definitions/dto.ExpenseResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Update an existing expense
       tags:
       - expenses
@@ -242,7 +275,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/backend_internal_adapter_in_http_dto.GetDistinctUsersResponse'
+            $ref: '#/definitions/dto.GetDistinctUsersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Get distinct user IDs
       tags:
       - users

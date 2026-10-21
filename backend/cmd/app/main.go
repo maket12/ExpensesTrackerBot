@@ -176,7 +176,7 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 		getDistinctUsersUC,
 	)
 
-	router := adapterhttp.NewRouter(httpHandler)
+	router := adapterhttp.NewRouter(httpHandler).InitRoutes()
 
 	var tgBot *tgadapter.Bot
 	if cfg.TelegramBotToken != "" {

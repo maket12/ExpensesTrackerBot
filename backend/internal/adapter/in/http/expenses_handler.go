@@ -78,7 +78,9 @@ func (h *ExpensesHandler) Create(c echo.Context) error {
 // @Produce json
 // @Param id path string true "Expense UUID"
 // @Success 200 {object} dto.ExpenseResponse
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [get]
 func (h *ExpensesHandler) Get(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -112,6 +114,7 @@ func (h *ExpensesHandler) Get(c echo.Context) error {
 // @Success 200 {object} dto.ExpenseResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [put]
 func (h *ExpensesHandler) Update(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -146,7 +149,9 @@ func (h *ExpensesHandler) Update(c echo.Context) error {
 // @Produce json
 // @Param id path string true "Expense UUID"
 // @Success 204 "No Content"
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses/{id} [delete]
 func (h *ExpensesHandler) Delete(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -175,13 +180,14 @@ func (h *ExpensesHandler) Delete(c echo.Context) error {
 // @Tags expenses
 // @Produce json
 // @Param user_id query int false "Telegram User ID"
-// @Param category query string false "Category"
+// @Param category query string false "Category" Enums(еда, транспорт, жильё, развлечения, здоровье, покупки, другое, все)
 // @Param from query string false "From timestamp (RFC3339)"
 // @Param to query string false "To timestamp (RFC3339)"
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
 // @Success 200 {object} dto.ListExpensesResponse
 // @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /api/expenses [get]
 func (h *ExpensesHandler) List(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -239,6 +245,7 @@ func (h *ExpensesHandler) List(c echo.Context) error {
 // @Tags users
 // @Produce json
 // @Success 200 {object} dto.GetDistinctUsersResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /api/users [get]
 func (h *ExpensesHandler) GetDistinctUsers(c echo.Context) error {
 	ctx := c.Request().Context()
