@@ -7,6 +7,7 @@ import (
 	"backend/internal/adapter/out/postgres/mapper"
 	"backend/internal/adapter/out/postgres/sqlc"
 	"backend/internal/domain/models"
+	"backend/internal/domain/port"
 	pkgerrs "backend/pkg/errs"
 	pkgpostgres "backend/pkg/postgres"
 
@@ -72,7 +73,7 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.queries.DeleteExpense(ctx, pkgpostgres.MapToPgUUID(id))
 }
 
-func (r *Repository) List(ctx context.Context, filter models.ExpenseFilter) ([]*models.Expense, error) {
+func (r *Repository) List(ctx context.Context, filter port.ExpenseFilter) ([]*models.Expense, error) {
 	params := mapper.ToListExpensesFilteredParams(filter)
 	rows, err := r.queries.ListExpensesFiltered(ctx, params)
 	if err != nil {

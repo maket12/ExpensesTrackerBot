@@ -5,6 +5,7 @@ import (
 
 	"backend/internal/adapter/out/postgres/sqlc"
 	"backend/internal/domain/models"
+	"backend/internal/domain/port"
 	pkgpostgres "backend/pkg/postgres"
 	"backend/pkg/utils"
 
@@ -96,7 +97,7 @@ func ToUpdateExpenseParams(e *models.Expense) sqlc.UpdateExpenseParams {
 	}
 }
 
-func ToListExpensesFilteredParams(filter models.ExpenseFilter) sqlc.ListExpensesFilteredParams {
+func ToListExpensesFilteredParams(filter port.ExpenseFilter) sqlc.ListExpensesFilteredParams {
 	var categoryStr *string
 	if filter.Category != nil {
 		categoryStr = utils.VPtr(filter.Category.String())

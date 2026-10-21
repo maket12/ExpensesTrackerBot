@@ -176,12 +176,16 @@ func (e *Expense) Update(
 	}
 
 	if comment != nil {
-		trimmedComm := strings.TrimSpace(*comment)
-		commLen := utf8.RuneCountInString(trimmedComm)
-		if commLen < minCommentLen || commLen > maxCommentLen {
-			return pkgerrs.NewValueInvalidError("comment")
+		if *comment != "" {
+			trimmedComm := strings.TrimSpace(*comment)
+			commLen := utf8.RuneCountInString(trimmedComm)
+			if commLen < minCommentLen || commLen > maxCommentLen {
+				return pkgerrs.NewValueInvalidError("comment")
+			}
+			e.comment = trimmedComm
+		} else {
+			e.comment = ""
 		}
-		e.comment = trimmedComm
 	}
 
 	e.updatedAt = time.Now().UTC()

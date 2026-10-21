@@ -8,7 +8,6 @@ import (
 	"time"
 
 	pkgerrs "backend/pkg/errs"
-	"backend/pkg/utils"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
@@ -26,7 +25,7 @@ func TestNewExpense_WithGoFakeIt(t *testing.T) {
 	spentAt := time.Now().UTC().Add(-time.Duration(gofakeit.Number(1, 100)) * time.Minute)
 	comm := gofakeit.Sentence(3)
 
-	e, err := NewExpense(userID, amount, cat, spentAt, &comm)
+	e, err := NewExpense(userID, amount, cat, spentAt, comm)
 	if err != nil {
 		t.Fatalf("unexpected error creating expense with fake data: %v", err)
 	}
@@ -43,8 +42,23 @@ func TestNewExpense_WithGoFakeIt(t *testing.T) {
 	if string(e.Category()) != cat {
 		t.Errorf("expected category %s, got %s", cat, e.Category())
 	}
-	if e.Comment() == nil || *e.Comment() != comm {
+	if e.Comment() != comm {
 		t.Errorf("expected comment %s, got %v", comm, e.Comment())
+	}
+}
+
+func TestNewExpense_OptionalComment(t *testing.T) {
+	userID := int64(gofakeit.Number(1, 100000))
+	amount := gofakeit.Float64Range(1.0, 10000.0)
+	cat := randomValidCategory()
+	spentAt := time.Now().UTC().Add(-time.Hour)
+
+	e, err := NewExpense(userID, amount, cat, spentAt, "")
+	if err != nil {
+		t.Fatalf("unexpected error creating expense without comment: %v", err)
+	}
+	if e.Comment() != "" {
+		t.Errorf("expected empty comment, got %q", e.Comment())
 	}
 }
 
@@ -54,7 +68,7 @@ func TestNewExpense_SpentAtAfterCreatedAtError(t *testing.T) {
 	cat := randomValidCategory()
 	futureSpentAt := time.Now().UTC().Add(time.Hour)
 
-	_, err := NewExpense(userID, amount, cat, futureSpentAt, nil)
+	_, err := NewExpense(userID, amount, cat, futureSpentAt, "")
 	if err == nil {
 		t.Fatalf("expected error when spentAt > createdAt")
 	}
@@ -69,7 +83,7 @@ func TestNewExpense_SpentAtTooOld(t *testing.T) {
 	cat := randomValidCategory()
 	tooOldSpentAt := earliestSpentAt.Add(-time.Hour)
 
-	_, err := NewExpense(userID, amount, cat, tooOldSpentAt, nil)
+	_, err := NewExpense(userID, amount, cat, tooOldSpentAt, "")
 	if err == nil {
 		t.Fatalf("expected error for spentAt before earliestSpentAt")
 	}
@@ -82,36 +96,42 @@ func TestNewExpense_SpentAtTooOld(t *testing.T) {
 func TestNewExpense_ValidationErrors(t *testing.T) {
 	validSpentAt := time.Now().UTC().Add(-time.Minute)
 
-	_, err := NewExpense(0, 100, "еда", validSpentAt, nil)
+	_, err := NewExpense(0, 100, "еда", validSpentAt, "")
 	if err == nil {
 		t.Errorf("expected error for user_id <= 0")
 	}
 
-	_, err = NewExpense(10, 0.5, "еда", validSpentAt, nil)
+	_, err = NewExpense(10, 0.5, "еда", validSpentAt, "")
 	if err == nil {
 		t.Errorf("expected error for amount < minAmount (1)")
 	}
 
-	_, err = NewExpense(10, 1000001, "еда", validSpentAt, nil)
+	_, err = NewExpense(10, 1000001, "еда", validSpentAt, "")
 	if err == nil {
 		t.Errorf("expected error for amount > maxAmount (1000000)")
 	}
 
-	_, err = NewExpense(10, 100, "несуществующая", validSpentAt, nil)
+	_, err = NewExpense(10, 100, "несуществующая", validSpentAt, "")
 	if err == nil {
 		t.Errorf("expected error for invalid category")
 	}
 
 	shortComm := "x"
-	_, err = NewExpense(10, 100, "еда", validSpentAt, &shortComm)
+	_, err = NewExpense(10, 100, "еда", validSpentAt, shortComm)
 	if err == nil {
 		t.Errorf("expected error for comment len < 2")
 	}
 
 	longComm := strings.Repeat("x", 257)
-	_, err = NewExpense(10, 100, "еда", validSpentAt, &longComm)
+	_, err = NewExpense(10, 100, "еда", validSpentAt, longComm)
 	if err == nil {
 		t.Errorf("expected error for comment len > 256")
+	}
+
+	whitespaceComm := "   "
+	_, err = NewExpense(10, 100, "еда", validSpentAt, whitespaceComm)
+	if err == nil {
+		t.Errorf("expected error for whitespace comment")
 	}
 }
 
@@ -121,7 +141,7 @@ func TestExpense_Update_PatchSemantics(t *testing.T) {
 	initialSpentAt := time.Now().UTC().Add(-2 * time.Hour)
 	initialComment := gofakeit.Sentence(2)
 
-	e, err := NewExpense(userID, initialAmount, "еда", initialSpentAt, &initialComment)
+	e, err := NewExpense(userID, initialAmount, "еда", initialSpentAt, initialComment)
 	if err != nil {
 		t.Fatalf("unexpected error creating expense: %v", err)
 	}
@@ -136,7 +156,7 @@ func TestExpense_Update_PatchSemantics(t *testing.T) {
 	if e.Category() != CategoryFood {
 		t.Errorf("expected category food to remain unchanged")
 	}
-	if e.Comment() == nil || *e.Comment() != initialComment {
+	if e.Comment() != initialComment {
 		t.Errorf("expected comment %s to remain unchanged", initialComment)
 	}
 
@@ -172,7 +192,7 @@ func TestExpense_Update_PatchSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error updating comment only: %v", err)
 	}
-	if e.Comment() == nil || *e.Comment() != newComment {
+	if e.Comment() != newComment {
 		t.Errorf("expected comment updated to %s, got %v", newComment, e.Comment())
 	}
 
@@ -181,13 +201,13 @@ func TestExpense_Update_PatchSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error clearing comment: %v", err)
 	}
-	if e.Comment() != nil {
-		t.Errorf("expected comment to be cleared to nil, got %v", e.Comment())
+	if e.Comment() != "" {
+		t.Errorf("expected comment to be cleared to empty string, got %v", e.Comment())
 	}
 }
 
 func TestExpense_Update_ValidationFailures(t *testing.T) {
-	e, err := NewExpense(10, 100, "еда", time.Now().UTC().Add(-time.Hour), utils.VPtr("обед"))
+	e, err := NewExpense(10, 100, "еда", time.Now().UTC().Add(-time.Hour), "обед")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,6 +244,18 @@ func TestExpense_Update_ValidationFailures(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected error for comment < 2 runes")
 	}
+
+	longComm := strings.Repeat("x", 257)
+	err = e.Update(nil, nil, nil, &longComm)
+	if err == nil {
+		t.Errorf("expected error for comment > 256 runes")
+	}
+
+	whitespaceComm := "   "
+	err = e.Update(nil, nil, nil, &whitespaceComm)
+	if err == nil {
+		t.Errorf("expected error for whitespace comment")
+	}
 }
 
 func TestRestoreExpense_WithGoFakeIt(t *testing.T) {
@@ -240,7 +272,7 @@ func TestRestoreExpense_WithGoFakeIt(t *testing.T) {
 	if e.ID() != id || e.UserID() != userID || e.Amount() != amount || e.Category() != cat {
 		t.Errorf("restored fields do not match")
 	}
-	if e.Comment() == nil || *e.Comment() != comm {
+	if e.Comment() != comm {
 		t.Errorf("expected comment %s, got %v", comm, e.Comment())
 	}
 }

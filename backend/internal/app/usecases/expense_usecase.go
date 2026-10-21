@@ -25,17 +25,12 @@ func NewExpenseUseCase(repo port.ExpenseRepository) *ExpenseUseCase {
 }
 
 func (u *ExpenseUseCase) CreateExpense(ctx context.Context, input dto.CreateExpenseInput) (dto.CreateExpenseOutput, error) {
-	var commPtr *string
-	if input.Comment != "" {
-		commPtr = &input.Comment
-	}
-
 	expense, err := models.NewExpense(
 		input.UserID,
 		input.Amount,
 		input.Category,
 		input.SpentAt,
-		commPtr,
+		input.Comment,
 	)
 	if err != nil {
 		return dto.CreateExpenseOutput{}, err

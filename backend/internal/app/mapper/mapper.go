@@ -1,17 +1,17 @@
 package mapper
 
 import (
+	"strings"
+
 	"backend/internal/app/dto"
 	"backend/internal/domain/models"
+	"backend/internal/domain/port"
+	pkgerrs "backend/pkg/errs"
 )
 
 func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
 	if e == nil {
 		return dto.ExpenseDTO{}
-	}
-	var comment string
-	if e.Comment() != nil {
-		comment = *e.Comment()
 	}
 	return dto.ExpenseDTO{
 		ID:        e.ID().String(),
@@ -19,7 +19,7 @@ func ToExpenseDTO(e *models.Expense) dto.ExpenseDTO {
 		Amount:    e.Amount(),
 		Category:  e.Category().String(),
 		SpentAt:   e.SpentAt(),
-		Comment:   comment,
+		Comment:   e.Comment(),
 		CreatedAt: e.CreatedAt(),
 		UpdatedAt: e.UpdatedAt(),
 	}
@@ -33,12 +33,12 @@ func ToExpenseDTOList(expenses []*models.Expense) []dto.ExpenseDTO {
 	return result
 }
 
-func ToDomainFilter(input dto.ListExpensesInput) (models.ExpenseFilter, error) {
+func ToDomainFilter(input dto.ListExpensesInput) (port.ExpenseFilter, error) {
 	var cat *models.Category
 	if input.Category != nil && *input.Category != "" && *input.Category != "все" {
-		c, err := models.NewCategory(*input.Category)
-		if err != nil {
-			return models.ExpenseFilter{}, err
+		c := models.Category(strings.TrimSpace(*input.Category))
+		if !c.IsValid() {
+			return port.ExpenseFilter{}, pkgerrs.NewValueInvalidError("category")
 		}
 		cat = &c
 	}
@@ -53,7 +53,7 @@ func ToDomainFilter(input dto.ListExpensesInput) (models.ExpenseFilter, error) {
 		offset = 0
 	}
 
-	return models.ExpenseFilter{
+	return port.ExpenseFilter{
 		UserID:   input.UserID,
 		Category: cat,
 		From:     input.From,

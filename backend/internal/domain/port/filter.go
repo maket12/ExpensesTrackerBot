@@ -1,10 +1,14 @@
-package models
+package port
 
-import "time"
+import (
+	"time"
+
+	"backend/internal/domain/models"
+)
 
 type ExpenseFilter struct {
 	UserID   *int64
-	Category *Category
+	Category *models.Category
 	From     *time.Time
 	To       *time.Time
 	Limit    int

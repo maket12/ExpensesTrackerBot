@@ -6,6 +6,7 @@ import (
 
 	"backend/internal/adapter/out/postgres/sqlc"
 	"backend/internal/domain/models"
+	"backend/internal/domain/port"
 	"backend/pkg/utils"
 
 	"github.com/google/uuid"
@@ -60,7 +61,7 @@ func TestMapperTimestamptz(t *testing.T) {
 
 func TestMapperParamsAndDomain(t *testing.T) {
 	spentAt := time.Now().UTC().Add(-time.Hour)
-	expense, err := models.NewExpense(12345, 120.50, "еда", spentAt, utils.VPtr("обед"))
+	expense, err := models.NewExpense(12345, 120.50, "еда", spentAt, "обед")
 	if err != nil {
 		t.Fatalf("unexpected error creating expense: %v", err)
 	}
@@ -78,7 +79,7 @@ func TestMapperParamsAndDomain(t *testing.T) {
 		t.Errorf("expected category 'еда', got %s", updateParams.Category)
 	}
 
-	filter := models.ExpenseFilter{
+	filter := port.ExpenseFilter{
 		UserID:   utils.VPtr(int64(12345)),
 		Category: utils.VPtr(models.CategoryFood),
 		From:     utils.VPtr(spentAt.Add(-time.Hour)),
@@ -123,7 +124,7 @@ func TestMapperParamsAndDomain(t *testing.T) {
 	if domainExpense.Category() != models.CategoryFood {
 		t.Errorf("expected category %v, got %v", models.CategoryFood, domainExpense.Category())
 	}
-	if domainExpense.Comment() == nil || *domainExpense.Comment() != "обед" {
+	if domainExpense.Comment() != "обед" {
 		t.Errorf("expected comment 'обед', got %v", domainExpense.Comment())
 	}
 }
