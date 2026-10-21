@@ -40,14 +40,14 @@ func (uc *UpdateExpenseUC) Execute(ctx context.Context, in dto.UpdateExpenseInpu
 
 	existing, err := uc.repo.Get(ctx, in.ID)
 	if err != nil {
-		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+			return nil, ucerrs.ErrExpenseNotFound
 		}
 		return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 	}
 
 	if in.EnforceUserID && existing.UserID() != in.UserID {
-		return nil, ucerrs.Wrap(ucerrs.ErrForbiddenAccess, errors.New("user mismatch"))
+		return nil, ucerrs.ErrForbiddenAccess
 	}
 
 	if err = existing.Update(in.Amount, in.Category, in.SpentAt, in.Comment); err != nil {
@@ -56,8 +56,8 @@ func (uc *UpdateExpenseUC) Execute(ctx context.Context, in dto.UpdateExpenseInpu
 
 	updated, err := uc.repo.Update(ctx, existing)
 	if err != nil {
-		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+			return nil, ucerrs.ErrExpenseNotFound
 		}
 		return nil, ucerrs.Wrap(ucerrs.ErrUpdateExpenseDB, err)
 	}

@@ -40,8 +40,8 @@ func (uc *GetExpenseUC) Execute(ctx context.Context, in dto.GetExpenseInput) (*d
 
 	expense, err := uc.repo.Get(ctx, in.ID)
 	if err != nil {
-		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+			return nil, ucerrs.ErrExpenseNotFound
 		}
 		return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 	}

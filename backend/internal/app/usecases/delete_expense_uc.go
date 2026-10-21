@@ -41,19 +41,19 @@ func (uc *DeleteExpenseUC) Execute(ctx context.Context, in dto.DeleteExpenseInpu
 	if in.EnforceUserID {
 		existing, err := uc.repo.Get(ctx, in.ID)
 		if err != nil {
-			if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-				return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+			if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+				return nil, ucerrs.ErrExpenseNotFound
 			}
 			return nil, ucerrs.Wrap(ucerrs.ErrGetExpenseDB, err)
 		}
 		if existing.UserID() != in.UserID {
-			return nil, ucerrs.Wrap(ucerrs.ErrForbiddenAccess, errors.New("user mismatch"))
+			return nil, ucerrs.ErrForbiddenAccess
 		}
 	}
 
 	if err := uc.repo.Delete(ctx, in.ID); err != nil {
-		if errors.Is(err, pkgerrs.ErrObjectNotFound) || errors.Is(err, ucerrs.ErrExpenseNotFound) {
-			return nil, ucerrs.Wrap(ucerrs.ErrExpenseNotFound, err)
+		if errors.Is(err, pkgerrs.ErrObjectNotFound) {
+			return nil, ucerrs.ErrExpenseNotFound
 		}
 		return nil, ucerrs.Wrap(ucerrs.ErrDeleteExpenseDB, err)
 	}
