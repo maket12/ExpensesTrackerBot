@@ -60,12 +60,19 @@ func main() {
 
 	var handleMessageUC *usecases.HandleAgentMessageUC
 	if cfg.LLMAPIKey != "" {
-		llmClient, err := llm.NewClient(cfg.LLMBaseURL, cfg.LLMAPIKey, cfg.LLMModel)
+		llmClient, err := llm.NewClient(
+			cfg.LLMBaseURL,
+			cfg.LLMAPIKey,
+			cfg.LLMModel,
+			createExpenseUC,
+			listExpensesUC,
+			updateExpenseUC,
+			deleteExpenseUC,
+		)
 		if err != nil {
 			slog.Warn("failed to initialize llm client", "error", err)
 		} else {
-			toolExecutor := usecases.NewAgentToolExecutor(createExpenseUC, listExpensesUC, updateExpenseUC, deleteExpenseUC)
-			handleMessageUC = usecases.NewHandleAgentMessageUC(llmClient, memoryStore, toolExecutor)
+			handleMessageUC = usecases.NewHandleAgentMessageUC(llmClient, memoryStore)
 			slog.Info("LLM client initialized", "model", cfg.LLMModel, "base_url", cfg.LLMBaseURL)
 		}
 	} else {

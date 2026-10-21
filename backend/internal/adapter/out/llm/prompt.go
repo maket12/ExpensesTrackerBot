@@ -1,4 +1,4 @@
-package usecases
+package llm
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ var weekdaysRu = map[time.Weekday]string{
 	time.Sunday:    "Воскресенье",
 }
 
-func BuildAgentSystemPrompt(now time.Time) string {
+func BuildSystemPrompt(now time.Time) string {
 	return fmt.Sprintf(`Ты — персональный финансовый ассистент по учету семейных расходов.
 Твоя задача — понимать сообщения пользователя на естественном русском языке и управлять его личными тратами через вызовы функций.
 

@@ -6,33 +6,26 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-func ToOpenAIMessages(messages []port.AgentMessage) []openai.ChatCompletionMessage {
-	result := make([]openai.ChatCompletionMessage, len(messages))
-	for i, m := range messages {
-		msg := openai.ChatCompletionMessage{
-			Role:    m.Role,
-			Content: m.Content,
-		}
-		if m.ToolCallID != "" {
-			msg.ToolCallID = m.ToolCallID
-		}
-		if len(m.ToolCalls) > 0 {
-			tcs := make([]openai.ToolCall, len(m.ToolCalls))
-			for j, tc := range m.ToolCalls {
-				tcs[j] = openai.ToolCall{
-					ID:   tc.ID,
-					Type: openai.ToolTypeFunction,
-					Function: openai.FunctionCall{
-						Name:      tc.Name,
-						Arguments: tc.Arguments,
-					},
-				}
-			}
-			msg.ToolCalls = tcs
-		}
-		result[i] = msg
+func ToOpenAIMessages(systemPrompt string, history []port.ChatMessage, userMessage string) []openai.ChatCompletionMessage {
+	messages := make([]openai.ChatCompletionMessage, 0, len(history)+2)
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: systemPrompt,
+	})
+
+	for _, h := range history {
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    h.Role,
+			Content: h.Content,
+		})
 	}
-	return result
+
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: userMessage,
+	})
+
+	return messages
 }
 
 func DefaultOpenAITools() []openai.Tool {
@@ -153,21 +146,5 @@ func DefaultOpenAITools() []openai.Tool {
 				},
 			},
 		},
-	}
-}
-
-func ToDomainAgentResponse(choice openai.ChatCompletionChoice) port.AgentResponse {
-	var toolCalls []port.ToolCall
-	for _, tc := range choice.Message.ToolCalls {
-		toolCalls = append(toolCalls, port.ToolCall{
-			ID:        tc.ID,
-			Name:      tc.Function.Name,
-			Arguments: tc.Function.Arguments,
-		})
-	}
-
-	return port.AgentResponse{
-		Content:   choice.Message.Content,
-		ToolCalls: toolCalls,
 	}
 }
