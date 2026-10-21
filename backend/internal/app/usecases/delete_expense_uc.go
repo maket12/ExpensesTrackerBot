@@ -25,7 +25,10 @@ func NewDeleteExpenseUC(repo port.ExpenseRepository) *DeleteExpenseUC {
 
 func (uc *DeleteExpenseUC) validate(in dto.DeleteExpenseInput) error {
 	if _, err := uuid.Parse(in.ID); err != nil {
-		return ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
+		return ucerrs.Wrap(
+			ucerrs.ErrInvalidInput,
+			pkgerrs.NewValueInvalidError("id"),
+		)
 	}
 	return nil
 }

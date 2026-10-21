@@ -5,61 +5,160 @@ import (
 	"errors"
 	"testing"
 
-	"backend/internal/adapter/out/memory"
 	"backend/internal/app/dto"
+	apperrs "backend/internal/app/errs"
 	"backend/internal/domain/port"
+	"backend/internal/domain/port/mocks"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-type mockAIAssistant struct {
-	reply string
-	err   error
-}
+func TestHandleAgentMessageUC_Execute_Success(t *testing.T) {
+	assistant := mocks.NewMockAIAssistant(t)
+	memory := mocks.NewMockChatMemory(t)
+	uc := NewHandleAgentMessageUC(assistant, memory)
 
-func (m *mockAIAssistant) GenerateReply(_ context.Context, _ int64, _ []port.ChatMessage, _ string) (string, error) {
-	return m.reply, m.err
-}
+	history := []port.ChatMessage{}
+	reply := "Записал: кофе 150 ₽ (еда)"
 
-func TestHandleAgentMessageUC_Execute(t *testing.T) {
-	ctx := context.Background()
-	mem := memory.NewStore()
-	assistant := &mockAIAssistant{reply: "Записал: кофе 150 ₽ (еда)"}
+	memory.EXPECT().
+		GetRecentMessages(mock.Anything, int64(42), 8).
+		Return(history, nil).
+		Once()
 
-	uc := NewHandleAgentMessageUC(assistant, mem)
+	assistant.EXPECT().
+		GenerateReply(mock.Anything, int64(42), history, "кофе 150").
+		Return(reply, nil).
+		Once()
 
-	out, err := uc.Execute(ctx, dto.HandleAgentMessageInput{
+	memory.EXPECT().
+		AddMessage(mock.Anything, int64(42), "user", "кофе 150").
+		Return(nil).
+		Once()
+
+	memory.EXPECT().
+		AddMessage(mock.Anything, int64(42), "assistant", reply).
+		Return(nil).
+		Once()
+
+	out, err := uc.Execute(context.Background(), dto.HandleAgentMessageInput{
 		UserID: 42,
 		Text:   "кофе 150",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
 
-	if out.ResponseText != "Записал: кофе 150 ₽ (еда)" {
-		t.Errorf("unexpected response text: %s", out.ResponseText)
-	}
-
-	recent, _ := mem.GetRecentMessages(ctx, 42, 10)
-	if len(recent) != 2 {
-		t.Fatalf("expected 2 messages in memory, got %d", len(recent))
-	}
-	if recent[0].Content != "кофе 150" || recent[1].Content != "Записал: кофе 150 ₽ (еда)" {
-		t.Errorf("memory content mismatch")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, out)
+	assert.Equal(t, reply, out.ResponseText)
 }
 
-func TestHandleAgentMessageUC_Error(t *testing.T) {
-	ctx := context.Background()
-	mem := memory.NewStore()
-	expectedErr := errors.New("ai failure")
-	assistant := &mockAIAssistant{err: expectedErr}
+func TestHandleAgentMessageUC_Execute_MemoryGetRecentError(t *testing.T) {
+	assistant := mocks.NewMockAIAssistant(t)
+	memory := mocks.NewMockChatMemory(t)
+	uc := NewHandleAgentMessageUC(assistant, memory)
 
-	uc := NewHandleAgentMessageUC(assistant, mem)
+	memory.EXPECT().
+		GetRecentMessages(mock.Anything, int64(42), 8).
+		Return(nil, errors.New("memory error")).
+		Once()
 
-	_, err := uc.Execute(ctx, dto.HandleAgentMessageInput{
+	out, err := uc.Execute(context.Background(), dto.HandleAgentMessageInput{
 		UserID: 42,
 		Text:   "кофе 150",
 	})
-	if err == nil || !errors.Is(err, expectedErr) {
-		t.Errorf("expected error %v, got %v", expectedErr, err)
-	}
+
+	assert.Nil(t, out)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, apperrs.ErrGetRecentMessagesStore))
+}
+
+func TestHandleAgentMessageUC_Execute_AssistantError(t *testing.T) {
+	assistant := mocks.NewMockAIAssistant(t)
+	memory := mocks.NewMockChatMemory(t)
+	uc := NewHandleAgentMessageUC(assistant, memory)
+
+	memory.EXPECT().
+		GetRecentMessages(mock.Anything, int64(42), 8).
+		Return([]port.ChatMessage{}, nil).
+		Once()
+
+	assistant.EXPECT().
+		GenerateReply(mock.Anything, int64(42), mock.Anything, "кофе 150").
+		Return("", errors.New("ai failure")).
+		Once()
+
+	out, err := uc.Execute(context.Background(), dto.HandleAgentMessageInput{
+		UserID: 42,
+		Text:   "кофе 150",
+	})
+
+	assert.Nil(t, out)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, apperrs.ErrGenerateReplyLLM))
+}
+
+func TestHandleAgentMessageUC_Execute_MemoryAddUserError(t *testing.T) {
+	assistant := mocks.NewMockAIAssistant(t)
+	memory := mocks.NewMockChatMemory(t)
+	uc := NewHandleAgentMessageUC(assistant, memory)
+
+	memory.EXPECT().
+		GetRecentMessages(mock.Anything, int64(42), 8).
+		Return([]port.ChatMessage{}, nil).
+		Once()
+
+	assistant.EXPECT().
+		GenerateReply(mock.Anything, int64(42), mock.Anything, "кофе 150").
+		Return("Записал", nil).
+		Once()
+
+	memory.EXPECT().
+		AddMessage(mock.Anything, int64(42), "user", "кофе 150").
+		Return(errors.New("store error")).
+		Once()
+
+	out, err := uc.Execute(context.Background(), dto.HandleAgentMessageInput{
+		UserID: 42,
+		Text:   "кофе 150",
+	})
+
+	assert.Nil(t, out)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, apperrs.ErrAddMessageStore))
+}
+
+func TestHandleAgentMessageUC_Execute_MemoryAddAssistantError(t *testing.T) {
+	assistant := mocks.NewMockAIAssistant(t)
+	memory := mocks.NewMockChatMemory(t)
+	uc := NewHandleAgentMessageUC(assistant, memory)
+
+	memory.EXPECT().
+		GetRecentMessages(mock.Anything, int64(42), 8).
+		Return([]port.ChatMessage{}, nil).
+		Once()
+
+	assistant.EXPECT().
+		GenerateReply(mock.Anything, int64(42), mock.Anything, "кофе 150").
+		Return("Записал", nil).
+		Once()
+
+	memory.EXPECT().
+		AddMessage(mock.Anything, int64(42), "user", "кофе 150").
+		Return(nil).
+		Once()
+
+	memory.EXPECT().
+		AddMessage(mock.Anything, int64(42), "assistant", "Записал").
+		Return(errors.New("store error")).
+		Once()
+
+	out, err := uc.Execute(context.Background(), dto.HandleAgentMessageInput{
+		UserID: 42,
+		Text:   "кофе 150",
+	})
+
+	assert.Nil(t, out)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, apperrs.ErrAddMessageStore))
 }

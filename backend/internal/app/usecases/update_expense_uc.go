@@ -25,7 +25,10 @@ func NewUpdateExpenseUC(repo port.ExpenseRepository) *UpdateExpenseUC {
 
 func (uc *UpdateExpenseUC) validate(in dto.UpdateExpenseInput) error {
 	if _, err := uuid.Parse(in.ID); err != nil {
-		return ucerrs.Wrap(ucerrs.ErrInvalidInput, err)
+		return ucerrs.Wrap(
+			ucerrs.ErrInvalidInput,
+			pkgerrs.NewValueInvalidError("id"),
+		)
 	}
 	return nil
 }
