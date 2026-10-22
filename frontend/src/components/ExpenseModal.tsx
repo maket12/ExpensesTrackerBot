@@ -142,6 +142,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             style={{ width: '100%' }}
             placeholder="Например: 12345678"
             precision={0}
+            controls={false}
           />
         </Form.Item>
 
@@ -178,6 +179,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             style={{ width: '100%' }}
             step={0.01}
             precision={2}
+            controls={false}
             placeholder="0.00"
           />
         </Form.Item>
