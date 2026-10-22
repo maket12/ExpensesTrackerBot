@@ -45,13 +45,26 @@ describe('errors utility', () => {
       expect(getRawApiError(err)).toBe('raw string error');
     });
 
-    it('returns empty string if response has no error field', () => {
+    it('returns empty string if response has no recognized error field', () => {
       const err = createAxiosError(400, { details: 'something else' });
       expect(getRawApiError(err)).toBe('');
+    });
+
+    it('returns message field from response data object if present', () => {
+      const err = createAxiosError(400, { message: 'some error message' });
+      expect(getRawApiError(err)).toBe('some error message');
     });
   });
 
   describe('formatApiError', () => {
+    it('translates internal error', () => {
+      expect(formatApiError('internal error')).toContain('Внутренняя ошибка сервера');
+    });
+
+    it('translates invalid input general error', () => {
+      expect(formatApiError('invalid input')).toContain('Некорректно заполнены поля');
+    });
+
     it('translates amount validation error', () => {
       expect(formatApiError('value is invalid: amount')).toContain('1.00 до 1 000 000.00 ₽');
     });

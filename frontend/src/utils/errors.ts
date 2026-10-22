@@ -4,11 +4,33 @@ import type { FormInstance } from 'antd';
 export function getRawApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
-    if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') {
-      return data.error;
+    if (!data) {
+      return error.response?.statusText || '';
     }
     if (typeof data === 'string') {
       return data;
+    }
+    if (typeof data === 'object') {
+      if ('error' in data) {
+        if (typeof data.error === 'string') return data.error;
+        if (
+          data.error &&
+          typeof data.error === 'object' &&
+          'message' in data.error &&
+          typeof data.error.message === 'string'
+        ) {
+          return data.error.message;
+        }
+      }
+      if ('message' in data && typeof data.message === 'string') {
+        return data.message;
+      }
+      if ('msg' in data && typeof data.msg === 'string') {
+        return data.msg;
+      }
+      if ('detail' in data && typeof data.detail === 'string') {
+        return data.detail;
+      }
     }
   }
   return '';
@@ -48,7 +70,7 @@ export function formatApiError(rawError: string): string {
   if (normalized.includes('expense not found') || normalized.includes('object not found')) {
     return 'Расход не найден (возможно, запись уже была удалена)';
   }
-  if (normalized.includes('access forbidden')) {
+  if (normalized.includes('access forbidden') || normalized.includes('forbidden')) {
     return 'Доступ к данному расходу запрещён';
   }
   if (normalized.includes('invalid json')) {
@@ -56,6 +78,12 @@ export function formatApiError(rawError: string): string {
   }
   if (normalized.includes('invalid identifier')) {
     return 'Некорректный формат идентификатора (UUID)';
+  }
+  if (normalized.includes('internal error') || normalized.includes('internal server error')) {
+    return 'Внутренняя ошибка сервера. Пожалуйста, повторите попытку позже.';
+  }
+  if (normalized.includes('invalid input')) {
+    return 'Некорректно заполнены поля формы. Проверьте введенные данные.';
   }
 
   return rawError;
@@ -68,13 +96,19 @@ export function getErrorMessage(
   if (axios.isAxiosError(error)) {
     const rawError = getRawApiError(error);
     if (rawError) {
-      return formatApiError(rawError);
+      const formatted = formatApiError(rawError);
+      if (formatted && formatted.trim().length > 0) {
+        return formatted;
+      }
     }
     if (error.response?.status === 400) {
       return 'Некорректные параметры запроса (400 Bad Request)';
     }
     if (error.response?.status === 404) {
       return 'Запрашиваемый ресурс не найден (404 Not Found)';
+    }
+    if (error.response?.status === 409) {
+      return 'Конфликт данных: запись уже существует';
     }
     if (error.response?.status === 500) {
       return 'Внутренняя ошибка сервера (500 Internal Server Error)';

@@ -90,8 +90,6 @@ export const App: React.FC = () => {
       await loadExpenses(filters);
       await loadDistinctUsers();
     } catch (err) {
-      const errorText = getErrorMessage(err, 'Ошибка при сохранении расхода');
-      message.error(errorText);
       throw err;
     } finally {
       setModalLoading(false);

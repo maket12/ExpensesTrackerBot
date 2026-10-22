@@ -54,19 +54,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     try {
       const values = await form.validateFields();
       setErrorMessage(null);
+      const trimmedComment = values.comment ? String(values.comment).trim() : '';
       await onSubmit({
         user_id: Number(values.user_id),
         amount: Number(values.amount),
         category: values.category as ExpenseCategory,
         spent_at: values.spent_at.toISOString(),
-        comment: values.comment || '',
+        comment: trimmedComment,
       });
       form.resetFields();
     } catch (err: any) {
       if (err?.errorFields) {
         return;
       }
-      const msg = getErrorMessage(err, 'Не удалось сохранить расход');
+      const msg = getErrorMessage(err, 'Не удалось сохранить расход. Проверьте введённые данные.');
       setErrorMessage(msg);
       attachFieldError(form, err, msg);
     }
@@ -90,7 +91,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     >
       {errorMessage && (
         <Alert
-          message="Ошибка сохранения"
+          message="Ошибка при сохранении"
           description={errorMessage}
           type="error"
           showIcon
@@ -114,18 +115,33 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           name="user_id"
           label="Telegram ID члена семьи"
           rules={[
-            { required: true, message: 'Укажите ID члена семьи' },
+            { required: true, message: 'Укажите Telegram ID члена семьи' },
             {
-              type: 'number',
-              min: 1,
-              message: 'Telegram ID должен быть положительным числом',
+              validator: async (_, value) => {
+                if (value === undefined || value === null || value === '') {
+                  return Promise.resolve();
+                }
+                const num = Number(value);
+                if (!Number.isFinite(num) || !Number.isInteger(num)) {
+                  return Promise.reject(new Error('Telegram ID должен быть целым числом'));
+                }
+                if (num <= 0) {
+                  return Promise.reject(
+                    new Error('Telegram ID должен быть положительным числом (> 0)')
+                  );
+                }
+                if (num > Number.MAX_SAFE_INTEGER) {
+                  return Promise.reject(new Error('Слишком большой ID пользователя'));
+                }
+                return Promise.resolve();
+              },
             },
           ]}
         >
           <InputNumber
             style={{ width: '100%' }}
             placeholder="Например: 12345678"
-            min={1}
+            precision={0}
           />
         </Form.Item>
 
@@ -133,19 +149,33 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           name="amount"
           label="Сумма расхода (₽)"
           rules={[
-            { required: true, message: 'Укажите сумму' },
+            { required: true, message: 'Укажите сумму расхода' },
             {
-              type: 'number',
-              min: 1,
-              max: 1000000,
-              message: 'Сумма должна быть от 1.00 до 1 000 000.00 ₽',
+              validator: async (_, value) => {
+                if (value === undefined || value === null || value === '') {
+                  return Promise.resolve();
+                }
+                const num = Number(value);
+                if (!Number.isFinite(num)) {
+                  return Promise.reject(new Error('Введите корректное число'));
+                }
+                if (num < 1.0) {
+                  return Promise.reject(
+                    new Error('Сумма расхода должна быть не менее 1.00 ₽')
+                  );
+                }
+                if (num > 1000000.0) {
+                  return Promise.reject(
+                    new Error('Сумма расхода не может превышать 1 000 000.00 ₽')
+                  );
+                }
+                return Promise.resolve();
+              },
             },
           ]}
         >
           <InputNumber
             style={{ width: '100%' }}
-            min={1}
-            max={1000000}
             step={0.01}
             precision={2}
             placeholder="0.00"
@@ -155,7 +185,18 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         <Form.Item
           name="category"
           label="Категория"
-          rules={[{ required: true, message: 'Выберите категорию' }]}
+          rules={[
+            { required: true, message: 'Выберите категорию расхода' },
+            {
+              validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                if (!ALL_CATEGORIES.includes(value)) {
+                  return Promise.reject(new Error('Недопустимая категория расхода'));
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
         >
           <Select
             placeholder="Выберите категорию"
@@ -169,7 +210,27 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         <Form.Item
           name="spent_at"
           label="Дата и время расхода"
-          rules={[{ required: true, message: 'Укажите дату расхода' }]}
+          rules={[
+            { required: true, message: 'Укажите дату и время расхода' },
+            {
+              validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const now = dayjs();
+                if (value.isAfter(now)) {
+                  return Promise.reject(
+                    new Error('Дата и время расхода не могут быть в будущем')
+                  );
+                }
+                const earliest = now.subtract(30, 'days');
+                if (value.isBefore(earliest)) {
+                  return Promise.reject(
+                    new Error('Дата расхода не может быть старше 30 дней')
+                  );
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
         >
           <DatePicker
             showTime
@@ -189,12 +250,24 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           name="comment"
           label="Комментарий"
           rules={[
-            { max: 256, message: 'Комментарий не может превышать 256 символов' },
             {
               validator: async (_, value) => {
-                if (value && value.trim().length > 0 && value.trim().length < 2) {
+                if (!value) return Promise.resolve();
+                const str = String(value);
+                const trimmed = str.trim();
+                if (str.length > 0 && trimmed.length === 0) {
+                  return Promise.reject(
+                    new Error('Комментарий не может состоять только из пробелов')
+                  );
+                }
+                if (trimmed.length > 0 && trimmed.length < 2) {
                   return Promise.reject(
                     new Error('Комментарий должен содержать не менее 2 символов')
+                  );
+                }
+                if (trimmed.length > 256) {
+                  return Promise.reject(
+                    new Error('Комментарий не может превышать 256 символов')
                   );
                 }
                 return Promise.resolve();
@@ -204,6 +277,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         >
           <Input.TextArea
             rows={2}
+            maxLength={256}
             placeholder="Необязательное описание (кофе, бензин, продукты...)"
           />
         </Form.Item>
