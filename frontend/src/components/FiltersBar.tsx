@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Row, Col, Select, DatePicker, Button, Space } from 'antd';
-import { ReloadOutlined, FilterOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { ALL_CATEGORIES, ExpenseFilters } from '../types/expense';
 

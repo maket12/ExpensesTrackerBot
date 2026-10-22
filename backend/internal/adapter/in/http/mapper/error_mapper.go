@@ -67,9 +67,6 @@ func HttpError(err error) *pkgerrs.OutErr {
 	case errors.Is(err, ucerrs.ErrForbiddenAccess):
 		return pkgerrs.NewOutError(http.StatusForbidden, err.Error(), err)
 
-	case errors.Is(err, pkgerrs.ErrNotAuthenticated):
-		return pkgerrs.NewOutError(http.StatusUnauthorized, err.Error(), err)
-
 	case errors.Is(err, pkgerrs.ErrObjectAlreadyExists):
 		return pkgerrs.NewOutError(http.StatusConflict, err.Error(), err)
 

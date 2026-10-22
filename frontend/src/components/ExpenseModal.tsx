@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, DatePicker } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Modal, Form, Input, InputNumber, Select, DatePicker, Alert } from 'antd';
 import dayjs from 'dayjs';
 import {
   Expense,
@@ -8,6 +8,7 @@ import {
   ALL_CATEGORIES,
   ExpenseCategory,
 } from '../types/expense';
+import { getErrorMessage, attachFieldError } from '../utils/errors';
 
 interface ExpenseModalProps {
   visible: boolean;
@@ -25,9 +26,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   loading,
 }) => {
   const [form] = Form.useForm();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isEditing = !!expense;
 
   useEffect(() => {
+    setErrorMessage(null);
     if (visible) {
       if (expense) {
         form.setFieldsValue({
@@ -50,6 +53,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
+      setErrorMessage(null);
       await onSubmit({
         user_id: Number(values.user_id),
         amount: Number(values.amount),
@@ -58,9 +62,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         comment: values.comment || '',
       });
       form.resetFields();
-    } catch {
-      // Form validation errors handled by antd
+    } catch (err: any) {
+      if (err?.errorFields) {
+        return;
+      }
+      const msg = getErrorMessage(err, 'Не удалось сохранить расход');
+      setErrorMessage(msg);
+      attachFieldError(form, err, msg);
     }
+  };
+
+  const handleCancel = () => {
+    setErrorMessage(null);
+    onCancel();
   };
 
   return (
@@ -68,17 +82,45 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       title={isEditing ? 'Редактировать расход' : 'Новый расход'}
       open={visible}
       onOk={handleOk}
-      onCancel={onCancel}
+      onCancel={handleCancel}
       confirmLoading={loading}
       okText={isEditing ? 'Сохранить' : 'Добавить'}
       cancelText="Отмена"
       destroyOnClose
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+      {errorMessage && (
+        <Alert
+          message="Ошибка сохранения"
+          description={errorMessage}
+          type="error"
+          showIcon
+          closable
+          onClose={() => setErrorMessage(null)}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <Form
+        form={form}
+        layout="vertical"
+        style={{ marginTop: 16 }}
+        onValuesChange={() => {
+          if (errorMessage) {
+            setErrorMessage(null);
+          }
+        }}
+      >
         <Form.Item
           name="user_id"
           label="Telegram ID члена семьи"
-          rules={[{ required: true, message: 'Укажите ID члена семьи' }]}
+          rules={[
+            { required: true, message: 'Укажите ID члена семьи' },
+            {
+              type: 'number',
+              min: 1,
+              message: 'Telegram ID должен быть положительным числом',
+            },
+          ]}
         >
           <InputNumber
             style={{ width: '100%' }}
@@ -94,14 +136,16 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             { required: true, message: 'Укажите сумму' },
             {
               type: 'number',
-              min: 0.01,
-              message: 'Сумма должна быть больше нуля',
+              min: 1,
+              max: 1000000,
+              message: 'Сумма должна быть от 1.00 до 1 000 000.00 ₽',
             },
           ]}
         >
           <InputNumber
             style={{ width: '100%' }}
-            min={0.01}
+            min={1}
+            max={1000000}
             step={0.01}
             precision={2}
             placeholder="0.00"
@@ -131,10 +175,33 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             showTime
             format="DD.MM.YYYY HH:mm"
             style={{ width: '100%' }}
+            disabledDate={(current) => {
+              return (
+                current &&
+                (current.isAfter(dayjs().endOf('day')) ||
+                  current.isBefore(dayjs().subtract(30, 'days').startOf('day')))
+              );
+            }}
           />
         </Form.Item>
 
-        <Form.Item name="comment" label="Комментарий">
+        <Form.Item
+          name="comment"
+          label="Комментарий"
+          rules={[
+            { max: 256, message: 'Комментарий не может превышать 256 символов' },
+            {
+              validator: async (_, value) => {
+                if (value && value.trim().length > 0 && value.trim().length < 2) {
+                  return Promise.reject(
+                    new Error('Комментарий должен содержать не менее 2 символов')
+                  );
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+        >
           <Input.TextArea
             rows={2}
             placeholder="Необязательное описание (кофе, бензин, продукты...)"

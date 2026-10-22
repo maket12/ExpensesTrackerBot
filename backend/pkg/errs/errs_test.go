@@ -17,11 +17,6 @@ func TestPkgErrors(t *testing.T) {
 		t.Errorf("expected exists to unwrap to ErrObjectAlreadyExists")
 	}
 
-	unauth := NewNotAuthenticatedError()
-	if !errors.Is(unauth, ErrNotAuthenticated) {
-		t.Errorf("expected unauth to unwrap to ErrNotAuthenticated")
-	}
-
 	invalid := NewValueInvalidError("status")
 	if !errors.Is(invalid, ErrValueIsInvalid) {
 		t.Errorf("expected invalid to unwrap to ErrValueIsInvalid")

@@ -16,12 +16,12 @@ const client = axios.create({
 export const api = {
   async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
     const params: Record<string, string | number> = {};
-    if (filters?.user_id) params.user_id = filters.user_id;
+    if (filters?.user_id !== undefined) params.user_id = filters.user_id;
     if (filters?.category && filters.category !== 'все') params.category = filters.category;
     if (filters?.from) params.from = filters.from;
     if (filters?.to) params.to = filters.to;
-    if (filters?.limit) params.limit = filters.limit;
-    if (filters?.offset) params.offset = filters.offset;
+    if (filters?.limit !== undefined) params.limit = filters.limit;
+    if (filters?.offset !== undefined) params.offset = filters.offset;
 
     const resp = await client.get<{ items?: Expense[]; expenses?: Expense[] }>('/expenses', { params });
     return resp.data.items || resp.data.expenses || [];

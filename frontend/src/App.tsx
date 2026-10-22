@@ -12,6 +12,7 @@ import { SummaryCards } from './components/SummaryCards';
 import { FiltersBar } from './components/FiltersBar';
 import { ExpensesTable } from './components/ExpensesTable';
 import { ExpenseModal } from './components/ExpenseModal';
+import { getErrorMessage } from './utils/errors';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -31,8 +32,8 @@ export const App: React.FC = () => {
     try {
       const data = await api.getExpenses(f);
       setExpenses(data);
-    } catch {
-      message.error('Ошибка загрузки списка расходов');
+    } catch (err) {
+      message.error(getErrorMessage(err, 'Ошибка загрузки списка расходов'));
     } finally {
       setLoading(false);
     }
@@ -88,8 +89,10 @@ export const App: React.FC = () => {
       setModalVisible(false);
       await loadExpenses(filters);
       await loadDistinctUsers();
-    } catch {
-      message.error('Ошибка при сохранении расхода');
+    } catch (err) {
+      const errorText = getErrorMessage(err, 'Ошибка при сохранении расхода');
+      message.error(errorText);
+      throw err;
     } finally {
       setModalLoading(false);
     }
@@ -101,8 +104,8 @@ export const App: React.FC = () => {
       message.success('Расход удален');
       await loadExpenses(filters);
       await loadDistinctUsers();
-    } catch {
-      message.error('Ошибка удаления расхода');
+    } catch (err) {
+      message.error(getErrorMessage(err, 'Ошибка при удалении расхода'));
     }
   };
 

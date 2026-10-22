@@ -1,0 +1,28 @@
+version: "2"
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - gosimple
+    - revive
+    - bodyclose
+    - sqlclosecheck
+    - noctx
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  exclude-dirs:
+    - venue-example

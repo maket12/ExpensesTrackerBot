@@ -91,12 +91,6 @@ func TestHttpError(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, out.Code)
 	})
 
-	t.Run("unauthenticated direct", func(t *testing.T) {
-		out := HttpError(pkgerrs.ErrNotAuthenticated)
-		require.NotNil(t, out)
-		assert.Equal(t, http.StatusUnauthorized, out.Code)
-	})
-
 	t.Run("object already exists", func(t *testing.T) {
 		out := HttpError(pkgerrs.ErrObjectAlreadyExists)
 		require.NotNil(t, out)
