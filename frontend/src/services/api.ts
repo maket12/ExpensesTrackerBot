@@ -23,18 +23,18 @@ export const api = {
     if (filters?.limit) params.limit = filters.limit;
     if (filters?.offset) params.offset = filters.offset;
 
-    const resp = await client.get<{ items: Expense[] }>('/expenses', { params });
-    return resp.data.items || [];
+    const resp = await client.get<{ items?: Expense[]; expenses?: Expense[] }>('/expenses', { params });
+    return resp.data.items || resp.data.expenses || [];
   },
 
   async createExpense(payload: CreateExpensePayload): Promise<Expense> {
-    const resp = await client.post<Expense>('/expenses', payload);
-    return resp.data;
+    const resp = await client.post<{ expense?: Expense } & Expense>('/expenses', payload);
+    return resp.data.expense || resp.data;
   },
 
   async updateExpense(id: string, payload: UpdateExpensePayload): Promise<Expense> {
-    const resp = await client.put<Expense>(`/expenses/${id}`, payload);
-    return resp.data;
+    const resp = await client.put<{ expense?: Expense } & Expense>(`/expenses/${id}`, payload);
+    return resp.data.expense || resp.data;
   },
 
   async deleteExpense(id: string): Promise<void> {

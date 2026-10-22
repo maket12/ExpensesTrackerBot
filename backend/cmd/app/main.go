@@ -168,6 +168,7 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 
 	// ExpensesHandler & Router
 	httpHandler := adapterhttp.NewExpensesHandler(
+		logger,
 		createExpenseUC,
 		getExpenseUC,
 		updateExpenseUC,
