@@ -108,10 +108,8 @@ func ToListExpensesInput(req httpdto.ListExpensesRequest) (appdto.ListExpensesIn
 }
 
 func ToListExpensesResponse(dtos []appdto.ExpenseDTO) httpdto.ListExpensesResponse {
-	expenses := ToExpenseResponses(dtos)
 	return httpdto.ListExpensesResponse{
-		Items:    expenses,
-		Expenses: expenses,
+		Items: ToExpenseResponses(dtos),
 	}
 }
 

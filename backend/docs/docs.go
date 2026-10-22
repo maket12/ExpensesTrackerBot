@@ -438,12 +438,6 @@ const docTemplate = `{
         "dto.ListExpensesResponse": {
             "type": "object",
             "properties": {
-                "expenses": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.Expense"
-                    }
-                },
                 "items": {
                     "type": "array",
                     "items": {

@@ -51,8 +51,7 @@ type ListExpensesRequest struct {
 }
 
 type ListExpensesResponse struct {
-	Items    []Expense `json:"items"`
-	Expenses []Expense `json:"expenses,omitempty"`
+	Items []Expense `json:"items"`
 }
 
 type GetDistinctUsersResponse struct {

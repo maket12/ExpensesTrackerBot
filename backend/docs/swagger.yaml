@@ -70,10 +70,6 @@ definitions:
     type: object
   dto.ListExpensesResponse:
     properties:
-      expenses:
-        items:
-          $ref: '#/definitions/dto.Expense'
-        type: array
       items:
         items:
           $ref: '#/definitions/dto.Expense'

@@ -220,7 +220,6 @@ func TestToListExpensesResponse(t *testing.T) {
 
 	resp := ToListExpensesResponse(dtos)
 	assert.Len(t, resp.Items, 2)
-	assert.Len(t, resp.Expenses, 2)
 	assert.Equal(t, dtos[0].ID.String(), resp.Items[0].ID)
 	assert.Equal(t, dtos[1].ID.String(), resp.Items[1].ID)
 }

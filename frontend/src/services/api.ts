@@ -23,8 +23,8 @@ export const api = {
     if (filters?.limit !== undefined) params.limit = filters.limit;
     if (filters?.offset !== undefined) params.offset = filters.offset;
 
-    const resp = await client.get<{ items?: Expense[]; expenses?: Expense[] }>('/expenses', { params });
-    return resp.data.items || resp.data.expenses || [];
+    const resp = await client.get<{ items?: Expense[] }>('/expenses', { params });
+    return resp.data.items || [];
   },
 
   async createExpense(payload: CreateExpensePayload): Promise<Expense> {
