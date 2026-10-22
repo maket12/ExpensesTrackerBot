@@ -115,10 +115,6 @@ func ToListExpensesResponse(dtos []appdto.ExpenseDTO) httpdto.ListExpensesRespon
 	}
 }
 
-func ToGetDistinctUsersInput(_ httpdto.GetDistinctUsersRequest) appdto.GetDistinctUsersInput {
-	return appdto.GetDistinctUsersInput{}
-}
-
 func ToGetDistinctUsersResponse(userIDs []int64) httpdto.GetDistinctUsersResponse {
 	if userIDs == nil {
 		userIDs = []int64{}

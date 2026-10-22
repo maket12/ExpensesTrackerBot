@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"backend/internal/app/dto"
 	apperrs "backend/internal/app/errs"
 	"backend/internal/domain/port/mocks"
 
@@ -24,7 +23,7 @@ func TestGetDistinctUsersUC_Execute_Success(t *testing.T) {
 		Return(expectedIDs, nil).
 		Once()
 
-	out, err := uc.Execute(context.Background(), dto.GetDistinctUsersInput{})
+	out, err := uc.Execute(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, out)
 	assert.Equal(t, expectedIDs, out.UserIDs)
@@ -39,7 +38,7 @@ func TestGetDistinctUsersUC_Execute_RepoError(t *testing.T) {
 		Return(nil, errors.New("db error")).
 		Once()
 
-	out, err := uc.Execute(context.Background(), dto.GetDistinctUsersInput{})
+	out, err := uc.Execute(context.Background())
 	assert.Nil(t, out)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, apperrs.ErrListUserIDSDB))

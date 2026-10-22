@@ -225,10 +225,7 @@ func TestToListExpensesResponse(t *testing.T) {
 	assert.Equal(t, dtos[1].ID.String(), resp.Items[1].ID)
 }
 
-func TestToGetDistinctUsersInputAndResponse(t *testing.T) {
-	in := ToGetDistinctUsersInput(httpdto.GetDistinctUsersRequest{})
-	assert.Equal(t, appdto.GetDistinctUsersInput{}, in)
-
+func TestToGetDistinctUsersResponse(t *testing.T) {
 	resp := ToGetDistinctUsersResponse([]int64{1, 2, 3})
 	assert.Equal(t, []int64{1, 2, 3}, resp.UserIDs)
 

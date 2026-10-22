@@ -86,10 +86,7 @@ func (h *ExpensesHandler) Create(c echo.Context) error {
 func (h *ExpensesHandler) Get(c echo.Context) error {
 	var req dto.GetExpenseRequest
 	if err := c.Bind(&req); err != nil {
-		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidJSON)
-	}
-	if req.ID == "" {
-		req.ID = c.Param("id")
+		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidIdentifier)
 	}
 
 	input, err := mapper.ToGetExpenseInput(req)
@@ -127,9 +124,6 @@ func (h *ExpensesHandler) Update(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidJSON)
 	}
-	if req.ID == "" {
-		req.ID = c.Param("id")
-	}
 
 	input, err := mapper.ToUpdateExpenseInput(req)
 	if err != nil {
@@ -163,10 +157,7 @@ func (h *ExpensesHandler) Update(c echo.Context) error {
 func (h *ExpensesHandler) Delete(c echo.Context) error {
 	var req dto.DeleteExpenseRequest
 	if err := c.Bind(&req); err != nil {
-		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidJSON)
-	}
-	if req.ID == "" {
-		req.ID = c.Param("id")
+		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidIdentifier)
 	}
 
 	input, err := mapper.ToDeleteExpenseInput(req)
@@ -231,12 +222,7 @@ func (h *ExpensesHandler) List(c echo.Context) error {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/users [get]
 func (h *ExpensesHandler) GetDistinctUsers(c echo.Context) error {
-	var req dto.GetDistinctUsersRequest
-	if err := c.Bind(&req); err != nil {
-		return h.returnErr(c, "binding failed", pkgerrs.ErrInvalidJSON)
-	}
-
-	out, err := h.getDistinctUsersUC.Execute(c.Request().Context(), mapper.ToGetDistinctUsersInput(req))
+	out, err := h.getDistinctUsersUC.Execute(c.Request().Context())
 	if err != nil {
 		return h.returnErr(c, "failed to get distinct users", err)
 	}

@@ -17,6 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  migrations:
+    image: migrate/migrate:latest
+    container_name: expenses_migrations
+    volumes:
+      - ./backend/migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-expenses}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
@@ -40,6 +53,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
 
   frontend:
     build:

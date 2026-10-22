@@ -14,12 +14,10 @@ type GetDistinctUsersUC struct {
 }
 
 func NewGetDistinctUsersUC(repo port.ExpenseRepository) *GetDistinctUsersUC {
-	return &GetDistinctUsersUC{
-		repo: repo,
-	}
+	return &GetDistinctUsersUC{repo: repo}
 }
 
-func (uc *GetDistinctUsersUC) Execute(ctx context.Context, _ dto.GetDistinctUsersInput) (*dto.GetDistinctUsersOutput, error) {
+func (uc *GetDistinctUsersUC) Execute(ctx context.Context) (*dto.GetDistinctUsersOutput, error) {
 	userIDs, err := uc.repo.ListUserIDS(ctx)
 	if err != nil {
 		return nil, ucerrs.Wrap(ucerrs.ErrListUserIDSDB, err)

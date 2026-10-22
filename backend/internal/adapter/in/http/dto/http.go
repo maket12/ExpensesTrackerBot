@@ -36,7 +36,7 @@ type UpdateExpenseResponse struct {
 }
 
 type DeleteExpenseRequest struct {
-	ID string `param:"id" json:"-"`
+	ID string `param:"id"`
 }
 
 type DeleteExpenseResponse struct{}
@@ -55,8 +55,6 @@ type ListExpensesResponse struct {
 	Expenses []Expense `json:"expenses,omitempty"`
 }
 
-type GetDistinctUsersRequest struct{}
-
 type GetDistinctUsersResponse struct {
 	UserIDs []int64 `json:"user_ids"`
 }
@@ -71,8 +69,6 @@ type Expense struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
-
-type ExpenseResponse = Expense
 
 type ErrorResponse struct {
 	Error string `json:"error"`

@@ -21,9 +21,6 @@ import (
 	"backend/internal/app/usecases"
 	pkgpostgres "backend/pkg/postgres"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -109,30 +106,7 @@ func closeLLMClient(
 	}
 }
 
-func runMigrations(logger *slog.Logger, dsn string) {
-	m, err := migrate.New("file://migrations", dsn)
-	if err != nil {
-		logger.Warn("migration init warning", slog.Any("error", err))
-		return
-	}
-	defer m.Close()
-
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		logger.Warn("migration up warning", slog.Any("error", err))
-	} else {
-		logger.Info("database migrations applied successfully")
-	}
-}
-
 func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) error {
-	// Postgres client
-	pgConfig := pkgpostgres.NewConfig(
-		cfg.DbHost, cfg.DbPort, cfg.DbUser, cfg.DbPassword,
-		cfg.DBName, cfg.DbSSLMode, cfg.DbMaxConn,
-		cfg.DbMinConn, cfg.DbMaxConnLifeTime, cfg.DbMaxConnIdleTime,
-	)
-	runMigrations(logger, pgConfig.MigrationDSN())
-
 	pgClient, err := newPostgresClient(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to init postgres client: %w", err)
@@ -151,6 +125,7 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 	listExpensesUC := usecases.NewListExpensesUC(repo)
 	getDistinctUsersUC := usecases.NewGetDistinctUsersUC(repo)
 
+	// LLM Client
 	llmClient, err := newLLMClient(
 		ctx,
 		cfg,
@@ -179,6 +154,7 @@ func runServer(ctx context.Context, cfg *config.Config, logger *slog.Logger) err
 
 	router := adapterhttp.NewRouter(httpHandler).InitRoutes()
 
+	// Launch telegram bot & server
 	var tgBot *tgadapter.Bot
 	if cfg.TelegramBotToken != "" {
 		tgBot, err = tgadapter.NewBot(cfg.TelegramBotToken, handleMessageUC)
