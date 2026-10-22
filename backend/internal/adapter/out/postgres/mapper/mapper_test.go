@@ -153,16 +153,7 @@ func TestToDomainExpense_And_ToDomainExpenses(t *testing.T) {
 	expense := createFakeDomainExpense(t)
 	createParams := ToCreateExpenseParams(expense)
 
-	row := sqlc.Expense{
-		ID:        createParams.ID,
-		UserID:    createParams.UserID,
-		Amount:    createParams.Amount,
-		Category:  createParams.Category,
-		SpentAt:   createParams.SpentAt,
-		Comment:   createParams.Comment,
-		CreatedAt: createParams.CreatedAt,
-		UpdatedAt: createParams.UpdatedAt,
-	}
+	row := sqlc.Expense(createParams)
 
 	t.Run("single row valid mapping", func(t *testing.T) {
 		domainExpense, err := ToDomainExpense(row)

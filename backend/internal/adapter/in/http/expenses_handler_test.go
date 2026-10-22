@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -55,7 +56,7 @@ func TestExpensesHandler_Create(t *testing.T) {
 
 		repo.On("Create", mock.Anything, mock.AnythingOfType("*models.Expense")).Return(expense, nil).Once()
 
-		req := httptest.NewRequest(http.MethodPost, "/api/expenses", bytes.NewReader(body))
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/expenses", bytes.NewReader(body))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -74,7 +75,7 @@ func TestExpensesHandler_Create(t *testing.T) {
 	t.Run("binding failed", func(t *testing.T) {
 		handler, _, e := setupTestHandler(t)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/expenses", bytes.NewReader([]byte("{invalid-json")))
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/expenses", bytes.NewReader([]byte("{invalid-json")))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -94,7 +95,7 @@ func TestExpensesHandler_Get(t *testing.T) {
 
 		repo.On("Get", mock.Anything, expense.ID()).Return(expense, nil).Once()
 
-		req := httptest.NewRequest(http.MethodGet, "/api/expenses/"+expense.ID().String(), nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/expenses/"+expense.ID().String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
@@ -113,7 +114,7 @@ func TestExpensesHandler_Get(t *testing.T) {
 	t.Run("invalid id", func(t *testing.T) {
 		handler, _, e := setupTestHandler(t)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/expenses/not-a-uuid", nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/expenses/not-a-uuid", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
@@ -130,7 +131,7 @@ func TestExpensesHandler_Get(t *testing.T) {
 
 		repo.On("Get", mock.Anything, id).Return(nil, pkgerrs.ErrObjectNotFound).Once()
 
-		req := httptest.NewRequest(http.MethodGet, "/api/expenses/"+id.String(), nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/expenses/"+id.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
@@ -158,7 +159,7 @@ func TestExpensesHandler_Update(t *testing.T) {
 		repo.On("Get", mock.Anything, existing.ID()).Return(existing, nil).Once()
 		repo.On("Update", mock.Anything, mock.AnythingOfType("*models.Expense")).Return(existing, nil).Once()
 
-		req := httptest.NewRequest(http.MethodPut, "/api/expenses/"+existing.ID().String(), bytes.NewReader(body))
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPut, "/api/expenses/"+existing.ID().String(), bytes.NewReader(body))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -178,7 +179,7 @@ func TestExpensesHandler_Update(t *testing.T) {
 	t.Run("invalid id", func(t *testing.T) {
 		handler, _, e := setupTestHandler(t)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/expenses/bad-id", bytes.NewReader([]byte("{}")))
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPut, "/api/expenses/bad-id", bytes.NewReader([]byte("{}")))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -198,7 +199,7 @@ func TestExpensesHandler_Delete(t *testing.T) {
 
 		repo.On("Delete", mock.Anything, id).Return(nil).Once()
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/expenses/"+id.String(), nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, "/api/expenses/"+id.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
@@ -215,7 +216,7 @@ func TestExpensesHandler_Delete(t *testing.T) {
 
 		repo.On("Delete", mock.Anything, id).Return(pkgerrs.ErrObjectNotFound).Once()
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/expenses/"+id.String(), nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, "/api/expenses/"+id.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
@@ -236,7 +237,7 @@ func TestExpensesHandler_List(t *testing.T) {
 
 		repo.On("List", mock.Anything, mock.Anything).Return([]*models.Expense{expense}, nil).Once()
 
-		req := httptest.NewRequest(http.MethodGet, "/api/expenses?user_id=100&category=еда", nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/expenses?user_id=100&category=еда", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
@@ -257,7 +258,7 @@ func TestExpensesHandler_GetDistinctUsers(t *testing.T) {
 
 	repo.On("ListUserIDS", mock.Anything).Return([]int64{10, 20, 30}, nil).Once()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/users", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -274,7 +275,7 @@ func TestExpensesHandler_GetDistinctUsers(t *testing.T) {
 func TestExpensesHandler_Health(t *testing.T) {
 	handler, _, e := setupTestHandler(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/health", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 

@@ -25,8 +25,9 @@ func NewBot(token string, handleMessageUC *usecases.HandleAgentMessageUC) (*Bot,
 	}
 
 	pref := telebot.Settings{
-		Token:  token,
-		Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
+		Token:     token,
+		Poller:    &telebot.LongPoller{Timeout: 10 * time.Second},
+		ParseMode: telebot.ModeHTML,
 	}
 
 	b, err := telebot.NewBot(pref)
@@ -84,7 +85,11 @@ func (b *Bot) setupHandlers() {
 
 		resp := mapper.ToTelegramResponse(out)
 		slog.InfoContext(ctx, "Telegram message handled successfully", "user_id", req.UserID, "duration", time.Since(start))
-		return c.Send(resp.Text)
+		if err := c.Send(resp.Text, telebot.ModeHTML); err != nil {
+			slog.WarnContext(ctx, "failed to send formatted telegram message, falling back to plain text", "user_id", req.UserID, "error", err)
+			return c.Send(out.ResponseText)
+		}
+		return nil
 	})
 }
 

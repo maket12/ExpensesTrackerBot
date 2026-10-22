@@ -17,6 +17,6 @@ func ToTelegramResponse(out *appdto.HandleAgentMessageOutput) tgdto.ProcessMessa
 		return tgdto.ProcessMessageResponse{}
 	}
 	return tgdto.ProcessMessageResponse{
-		Text: out.ResponseText,
+		Text: FormatTelegramHTML(out.ResponseText),
 	}
 }

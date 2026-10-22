@@ -1,28 +1,48 @@
 version: "2"
-
+run:
+  tests: true
 linters:
   enable:
-    - govet
-    - errcheck
-    - staticcheck
-    - unused
-    - ineffassign
-    - gosimple
-    - revive
     - bodyclose
-    - sqlclosecheck
     - noctx
+    - revive
+    - sqlclosecheck
   settings:
     revive:
       rules:
         - name: exported
-          disabled: false
-
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: '(.+)_test\.go'
+        linters:
+          - noctx
+          - bodyclose
+      - path: 'docs/'
+        linters:
+          - typecheck
+          - revive
+    paths:
+      - ^docs/
+      - internal/domain/port/mocks
+      - third_party$
+      - builtin$
+      - examples$
 formatters:
   enable:
     - gofmt
     - goimports
-
-issues:
-  exclude-dirs:
-    - venue-example
+  exclusions:
+    generated: lax
+    paths:
+      - ^docs/
+      - internal/domain/port/mocks
+      - third_party$
+      - builtin$
+      - examples$

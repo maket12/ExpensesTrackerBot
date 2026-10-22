@@ -23,13 +23,13 @@ func TestToAgentInput(t *testing.T) {
 
 func TestToTelegramResponse(t *testing.T) {
 	t.Run("non-nil output mapped correctly", func(t *testing.T) {
-		reply := gofakeit.Sentence(4)
+		reply := "Вы потратили **320 ₽**"
 		out := &appdto.HandleAgentMessageOutput{
 			ResponseText: reply,
 		}
 
 		resp := ToTelegramResponse(out)
-		assert.Equal(t, reply, resp.Text)
+		assert.Equal(t, "Вы потратили <b>320 ₽</b>", resp.Text)
 	})
 
 	t.Run("nil output returns empty response", func(t *testing.T) {
