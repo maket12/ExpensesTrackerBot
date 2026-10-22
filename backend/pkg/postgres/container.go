@@ -31,7 +31,7 @@ func StartTestContainer(ctx context.Context) (*TestContainer, error) {
 	)
 
 	pgContainer, err := container.Run(ctx,
-		"postgres:15-alpine",
+		"postgres:16-alpine",
 		container.WithUsername(user),
 		container.WithPassword(password),
 		container.WithDatabase(dbName),
