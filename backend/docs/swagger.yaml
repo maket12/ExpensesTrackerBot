@@ -3,22 +3,41 @@ definitions:
   dto.CreateExpenseRequest:
     properties:
       amount:
+        example: 350.5
         type: number
       category:
+        enum:
+        - еда
+        - транспорт
+        - жильё
+        - развлечения
+        - здоровье
+        - покупки
+        - другое
+        example: еда
         type: string
       comment:
+        example: обед
         type: string
       spent_at:
+        example: "2026-10-22T15:30:00Z"
+        format: date-time
         type: string
       user_id:
+        example: 100
         type: integer
+    type: object
+  dto.CreateExpenseResponse:
+    properties:
+      expense:
+        $ref: '#/definitions/dto.Expense'
     type: object
   dto.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  dto.ExpenseResponse:
+  dto.Expense:
     properties:
       amount:
         type: number
@@ -44,25 +63,53 @@ definitions:
           type: integer
         type: array
     type: object
+  dto.GetExpenseResponse:
+    properties:
+      expense:
+        $ref: '#/definitions/dto.Expense'
+    type: object
   dto.ListExpensesResponse:
     properties:
+      expenses:
+        items:
+          $ref: '#/definitions/dto.Expense'
+        type: array
       items:
         items:
-          $ref: '#/definitions/dto.ExpenseResponse'
+          $ref: '#/definitions/dto.Expense'
         type: array
     type: object
   dto.UpdateExpenseRequest:
     properties:
       amount:
+        example: 450
         type: number
       category:
+        enum:
+        - еда
+        - транспорт
+        - жильё
+        - развлечения
+        - здоровье
+        - покупки
+        - другое
+        example: еда
         type: string
       comment:
+        example: ужин
         type: string
       spent_at:
+        example: "2026-10-22T15:30:00Z"
+        format: date-time
         type: string
       user_id:
+        example: 100
         type: integer
+    type: object
+  dto.UpdateExpenseResponse:
+    properties:
+      expense:
+        $ref: '#/definitions/dto.Expense'
     type: object
 info:
   contact: {}
@@ -142,7 +189,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/dto.ExpenseResponse'
+            $ref: '#/definitions/dto.CreateExpenseResponse'
         "400":
           description: Bad Request
           schema:
@@ -197,7 +244,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ExpenseResponse'
+            $ref: '#/definitions/dto.GetExpenseResponse'
         "400":
           description: Bad Request
           schema:
@@ -235,7 +282,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ExpenseResponse'
+            $ref: '#/definitions/dto.UpdateExpenseResponse'
         "400":
           description: Bad Request
           schema:

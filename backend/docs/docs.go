@@ -121,7 +121,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.CreateExpenseResponse"
                         }
                     },
                     "400": {
@@ -162,7 +162,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.GetExpenseResponse"
                         }
                     },
                     "400": {
@@ -219,7 +219,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ExpenseResponse"
+                            "$ref": "#/definitions/dto.UpdateExpenseResponse"
                         }
                     },
                     "400": {
@@ -340,19 +340,42 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 350.5
                 },
                 "category": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "еда",
+                        "транспорт",
+                        "жильё",
+                        "развлечения",
+                        "здоровье",
+                        "покупки",
+                        "другое"
+                    ],
+                    "example": "еда"
                 },
                 "comment": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "обед"
                 },
                 "spent_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-10-22T15:30:00Z"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
+        "dto.CreateExpenseResponse": {
+            "type": "object",
+            "properties": {
+                "expense": {
+                    "$ref": "#/definitions/dto.Expense"
                 }
             }
         },
@@ -364,7 +387,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ExpenseResponse": {
+        "dto.Expense": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -404,13 +427,27 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetExpenseResponse": {
+            "type": "object",
+            "properties": {
+                "expense": {
+                    "$ref": "#/definitions/dto.Expense"
+                }
+            }
+        },
         "dto.ListExpensesResponse": {
             "type": "object",
             "properties": {
+                "expenses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Expense"
+                    }
+                },
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.ExpenseResponse"
+                        "$ref": "#/definitions/dto.Expense"
                     }
                 }
             }
@@ -419,19 +456,42 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 450
                 },
                 "category": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "еда",
+                        "транспорт",
+                        "жильё",
+                        "развлечения",
+                        "здоровье",
+                        "покупки",
+                        "другое"
+                    ],
+                    "example": "еда"
                 },
                 "comment": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ужин"
                 },
                 "spent_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-10-22T15:30:00Z"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
+        "dto.UpdateExpenseResponse": {
+            "type": "object",
+            "properties": {
+                "expense": {
+                    "$ref": "#/definitions/dto.Expense"
                 }
             }
         }
