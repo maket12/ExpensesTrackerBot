@@ -1,38 +1,48 @@
+version: "2"
 run:
   tests: true
-  timeout: 5m
-
 linters:
   enable:
     - bodyclose
     - noctx
     - revive
     - sqlclosecheck
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: '(.+)_test\.go'
+        linters:
+          - noctx
+          - bodyclose
+      - path: 'docs/'
+        linters:
+          - typecheck
+          - revive
+    paths:
+      - ^docs/
+      - internal/domain/port/mocks
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
     - gofmt
     - goimports
-
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        disabled: true
-  staticcheck:
-    checks: ["all", "-ST1020"]
-
-issues:
-  exclude-rules:
-    - path: '(.+)_test\.go'
-      linters:
-        - noctx
-        - bodyclose
-    - path: 'docs/'
-      linters:
-        - typecheck
-        - revive
-    - text: "ST1020:"
-      linters:
-        - staticcheck
-        - stylecheck
-  exclude-dirs:
-    - docs
-    - internal/domain/port/mocks
+  exclusions:
+    generated: lax
+    paths:
+      - ^docs/
+      - internal/domain/port/mocks
+      - third_party$
+      - builtin$
+      - examples$
