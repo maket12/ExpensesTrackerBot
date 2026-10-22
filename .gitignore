@@ -4,7 +4,6 @@ node_modules/
 dist/
 frontend/dist/
 frontend/node_modules/
-frontend/pnpm-lock.yaml
 *.exe
 *.exe~
 *.dll

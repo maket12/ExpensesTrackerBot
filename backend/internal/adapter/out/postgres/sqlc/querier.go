@@ -12,7 +12,7 @@ import (
 
 type Querier interface {
 	CreateExpense(ctx context.Context, db DBTX, arg CreateExpenseParams) (Expense, error)
-	DeleteExpense(ctx context.Context, db DBTX, id pgtype.UUID) error
+	DeleteExpense(ctx context.Context, db DBTX, id pgtype.UUID) (int64, error)
 	GetDistinctUserIDs(ctx context.Context, db DBTX) ([]int64, error)
 	GetExpenseByID(ctx context.Context, db DBTX, id pgtype.UUID) (Expense, error)
 	GetLatestExpensesByUser(ctx context.Context, db DBTX, arg GetLatestExpensesByUserParams) ([]Expense, error)

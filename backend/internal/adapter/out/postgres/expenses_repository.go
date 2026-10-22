@@ -55,7 +55,14 @@ func (r *ExpensesRepository) Update(ctx context.Context, expense *models.Expense
 }
 
 func (r *ExpensesRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.q.DeleteExpense(ctx, r.db(ctx), pkgpostgres.MapToPgUUID(id))
+	rows, err := r.q.DeleteExpense(ctx, r.db(ctx), pkgpostgres.MapToPgUUID(id))
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return pkgerrs.NewObjectNotFoundError("expense", id)
+	}
+	return nil
 }
 
 func (r *ExpensesRepository) List(ctx context.Context, filter port.ExpenseFilter) ([]*models.Expense, error) {

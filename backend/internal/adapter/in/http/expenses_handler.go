@@ -43,6 +43,7 @@ func NewExpensesHandler(
 	}
 }
 
+// Create handles creation of a new expense.
 // @Summary Create a new expense
 // @Description Create a new expense record for any family member
 // @Tags expenses
@@ -73,6 +74,7 @@ func (h *ExpensesHandler) Create(c echo.Context) error {
 	return c.JSON(http.StatusCreated, mapper.ToCreateExpenseResponse(out.Expense))
 }
 
+// Get retrieves an expense by ID.
 // @Summary Get expense by ID
 // @Description Retrieve a single expense by UUID
 // @Tags expenses
@@ -107,6 +109,7 @@ func (h *ExpensesHandler) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, mapper.ToGetExpenseResponse(out.Expense))
 }
 
+// Update updates an existing expense.
 // @Summary Update an existing expense
 // @Description Update expense details by UUID
 // @Tags expenses
@@ -144,6 +147,7 @@ func (h *ExpensesHandler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, mapper.ToUpdateExpenseResponse(out.Expense))
 }
 
+// Delete deletes an expense by ID.
 // @Summary Delete an expense
 // @Description Delete an expense by UUID
 // @Tags expenses
@@ -177,6 +181,7 @@ func (h *ExpensesHandler) Delete(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+// List retrieves expenses with optional filters.
 // @Summary List expenses
 // @Description Retrieve a list of expenses with optional filtering
 // @Tags expenses
@@ -214,6 +219,7 @@ func (h *ExpensesHandler) List(c echo.Context) error {
 	return c.JSON(http.StatusOK, mapper.ToListExpensesResponse(out.Expenses))
 }
 
+// GetDistinctUsers retrieves all distinct user IDs.
 // @Summary Get distinct user IDs
 // @Description List all distinct family member user IDs in database
 // @Tags users
@@ -234,6 +240,7 @@ func (h *ExpensesHandler) GetDistinctUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, mapper.ToGetDistinctUsersResponse(out.UserIDs))
 }
 
+// Health returns service status.
 // @Summary Health check
 // @Description Check service availability
 // @Tags health

@@ -134,6 +134,13 @@ func (s *ExpensesRepoSuite) TestDelete_Success() {
 	s.Require().Nil(got)
 }
 
+func (s *ExpensesRepoSuite) TestDelete_NotFound() {
+	err := s.repo.Delete(s.ctx, uuid.New())
+	s.Require().Error(err)
+	var notFoundErr *pkgerrs.ObjectNotFoundError
+	s.Require().ErrorAs(err, &notFoundErr)
+}
+
 func (s *ExpensesRepoSuite) TestList_Filtered() {
 	now := time.Now().UTC()
 

@@ -19,6 +19,8 @@ type Router struct {
 // @version 1.0
 // @description REST API for Family Expenses Tracker Web Panel
 // @BasePath /
+
+// NewRouter creates a new Router instance.
 func NewRouter(expensesHandler *ExpensesHandler) *Router {
 	return &Router{Expenses: expensesHandler}
 }

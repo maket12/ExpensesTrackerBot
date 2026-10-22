@@ -18,7 +18,7 @@ SET amount = $2,
 WHERE id = $1
 RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at;
 
--- name: DeleteExpense :exec
+-- name: DeleteExpense :execrows
 DELETE FROM expenses
 WHERE id = $1;
 

@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createExpense = `-- name: Create :one
+const createExpense = `-- name: CreateExpense :one
 INSERT INTO expenses (id, user_id, amount, category, spent_at, comment, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, user_id, amount, category, spent_at, comment, created_at, updated_at
@@ -53,14 +53,17 @@ func (q *Queries) CreateExpense(ctx context.Context, db DBTX, arg CreateExpenseP
 	return i, err
 }
 
-const deleteExpense = `-- name: Delete :exec
+const deleteExpense = `-- name: DeleteExpense :execrows
 DELETE FROM expenses
 WHERE id = $1
 `
 
-func (q *Queries) DeleteExpense(ctx context.Context, db DBTX, id pgtype.UUID) error {
-	_, err := db.Exec(ctx, deleteExpense, id)
-	return err
+func (q *Queries) DeleteExpense(ctx context.Context, db DBTX, id pgtype.UUID) (int64, error) {
+	result, err := db.Exec(ctx, deleteExpense, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getDistinctUserIDs = `-- name: GetDistinctUserIDs :many
@@ -209,7 +212,7 @@ func (q *Queries) ListExpensesFiltered(ctx context.Context, db DBTX, arg ListExp
 	return items, nil
 }
 
-const updateExpense = `-- name: Update :one
+const updateExpense = `-- name: UpdateExpense :one
 UPDATE expenses
 SET amount = $2,
     category = $3,
