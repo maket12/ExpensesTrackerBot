@@ -99,6 +99,12 @@ func TestBuildSystemPrompt(t *testing.T) {
 	if !strings.Contains(prompt, "21.10.2026") {
 		t.Errorf("expected prompt to contain date '21.10.2026'")
 	}
+	if !strings.Contains(prompt, "таблицы") {
+		t.Errorf("expected prompt to forbid markdown tables")
+	}
+	if !strings.Contains(prompt, "UUID") {
+		t.Errorf("expected prompt to mention UUID restriction")
+	}
 }
 
 func TestClient_GenerateReply_Direct(t *testing.T) {
